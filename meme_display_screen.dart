@@ -124,10 +124,23 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
         'user_id': userId, 'image_url': uploadedImageUrl,
         'text_input': {'top': _topTextController.text.trim(), 'bottom': _bottomTextController.text.trim()},
         'template_id': widget.initialMemeData.templateId,
-        'is_custom_image': widget.initialMemeData.localImageFile != null || (widget.initialMemeData.imageUrl != null && widget.initialMemeData.templateId == null),
+        // Updated logic for is_custom_image to directly use localImageFile presence
+        'is_custom_image': widget.initialMemeData.localImageFile != null,
         'visibility': 'private',
       };
+      if (memeDataToInsert['template_id'] == null && widget.initialMemeData.localImageFile == null) {
+        // If it's not a custom local file and templateId is null, it might be an external URL
+        // treated as custom. This case is covered by localImageFile being null and templateId being null.
+        // The previous logic: widget.initialMemeData.localImageFile != null || (widget.initialMemeData.imageUrl != null && widget.initialMemeData.templateId == null)
+        // can be simplified if MemeData construction in TextInputScreen ensures templateId is null for custom images.
+        // For clarity and directness, widget.initialMemeData.localImageFile != null is the most straightforward
+        // way to determine if the *origin* was a local file upload.
+        // If an imageUrl can be custom without a templateId, the previous logic was more encompassing.
+        // Reverting to the more encompassing logic for safety, assuming templateId might be missing for non-template URLs.
+         memeDataToInsert['is_custom_image'] = widget.initialMemeData.localImageFile != null || (widget.initialMemeData.imageUrl != null && widget.initialMemeData.templateId == null);
+      }
       if (memeDataToInsert['template_id'] == null) memeDataToInsert.remove('template_id');
+
       await supabase.from('memes').insert(memeDataToInsert);
 
       if (mounted) {
@@ -213,24 +226,57 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     final ThemeData theme = Theme.of(context);
     Widget imageWidget;
 
-    if (widget.initialMemeData.imageUrl != null) {
+    // Explicitly prioritize localImageFile if it exists
+    if (widget.initialMemeData.localImageFile != null) {
+      imageWidget = Image.file(
+        widget.initialMemeData.localImageFile!,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          print("Error loading local file: $error");
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.broken_image_outlined, size: 50, color: Colors.redAccent.shade400),
+                const SizedBox(height: 8),
+                const Text("Error loading local image.", style: TextStyle(color: Colors.redAccent)),
+              ],
+            )
+          );
+        },
+      );
+    } else if (widget.initialMemeData.imageUrl != null) {
       imageWidget = Image.network(
         widget.initialMemeData.imageUrl!,
         fit: BoxFit.contain,
         loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
           if (loadingProgress == null) return child;
           return Center(child: CircularProgressIndicator(
+            strokeWidth: 2.0,
             value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null,
           ));
         },
         errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
-          return Container(color: Colors.grey[200], child: Center(child: Icon(Icons.broken_image_outlined, size: 50, color: Colors.grey[400])));
+          print("Error loading network image: $exception");
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.signal_wifi_off_outlined, size: 50, color: Colors.orangeAccent.shade400),
+                const SizedBox(height: 8),
+                const Text("Error loading template image.", style: TextStyle(color: Colors.orangeAccent)),
+              ],
+            )
+          );
         },
       );
-    } else if (widget.initialMemeData.localImageFile != null) {
-      imageWidget = Image.file(widget.initialMemeData.localImageFile!, fit: BoxFit.contain);
     } else {
-      imageWidget = Container(color: Colors.grey[300], child: const Center(child: Text('Image source not available')));
+      // This case should ideally not be reached due to MemeData's assertion
+      // and how TextInputScreen populates MemeData.
+      imageWidget = Container(
+        color: Colors.grey[300],
+        child: const Center(child: Text('Error: No valid image source provided!', style: TextStyle(color: Colors.red))),
+      );
     }
 
     final TextStyle memeTextStyle = TextStyle(
@@ -238,7 +284,6 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
       fontSize: _fontSize,
       color: _textColor,
       fontWeight: FontWeight.w900,
-      // TODO: (Advanced Editing) Make shadows/stroke configurable.
       shadows: const <Shadow>[
         Shadow(offset: Offset(-2.0, -2.0), color: Colors.black), Shadow(offset: Offset(2.0, -2.0), color: Colors.black),
         Shadow(offset: Offset(2.0, 2.0), color: Colors.black), Shadow(offset: Offset(-2.0, 2.0), color: Colors.black),
@@ -255,26 +300,19 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
           decoration: BoxDecoration(
             border: Border.all(color: theme.dividerColor, width: 0.5),
             color: Colors.grey[800],
-            // TODO: (Advanced Editing) Consider allowing background color change if image is transparent or smaller.
           ),
-          // TODO: (Advanced Editing) For draggable text, convert Stack children to a list of
-          //       editable items, each with its own position, style, and gesture detectors.
-          //       This would likely involve a custom painter or more complex widget stack.
           child: Stack(
             alignment: Alignment.center,
             children: <Widget>[
-              Center(child: imageWidget), // TODO: (Advanced Editing) Add controls for image filters, crop, rotation here.
+              Center(child: imageWidget),
               Positioned(
                 top: 15, left: 15, right: 15,
-                // TODO: (Advanced Editing) Wrap Text with GestureDetector for dragging.
                 child: Text(_topTextController.text.toUpperCase(), textAlign: TextAlign.center, style: memeTextStyle, maxLines: 3, overflow: TextOverflow.ellipsis),
               ),
               Positioned(
                 bottom: 15, left: 15, right: 15,
-                // TODO: (Advanced Editing) Wrap Text with GestureDetector for dragging.
                 child: Text(_bottomTextController.text.toUpperCase(), textAlign: TextAlign.center, style: memeTextStyle, maxLines: 3, overflow: TextOverflow.ellipsis),
               ),
-              // TODO: (Advanced Editing) Add UI for adding more text layers or stickers.
             ],
           ),
         ),
@@ -283,6 +321,7 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   }
 
   Widget _buildEditingControls(BuildContext context) {
+    // ... (This method remains unchanged from the previous version)
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -304,31 +343,24 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
             _buildColorButton(Colors.white, "White"), _buildColorButton(Colors.black, "Black"),
             _buildColorButton(Colors.yellowAccent, "Yellow"), _buildColorButton(Colors.redAccent, "Red"),
             _buildColorButton(Colors.lightBlueAccent, "Blue"),
-            // TODO: (Advanced Editing) Add button to open a full color picker.
           ]),
           const SizedBox(height: 20),
           Text('Font Family:', style: theme.textTheme.titleMedium),
           DropdownButtonFormField<String>(
             value: _fontFamily,
             decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0)),
-            items: <String>['Impact', 'Arial', 'Comic Sans MS', 'Roboto', 'Times New Roman'] // TODO: (Advanced Editing) Populate with more fonts, possibly custom/Google Fonts.
+            items: <String>['Impact', 'Arial', 'Comic Sans MS', 'Roboto', 'Times New Roman']
                 .map<DropdownMenuItem<String>>((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: TextStyle(fontFamily: value, fontSize: 16))))
                 .toList(),
             onChanged: (String? newValue) { if (newValue != null) setState(() => _fontFamily = newValue); },
           ),
-          const SizedBox(height: 20),
-          // --- Placeholder for Advanced Editing Controls ---
-          // Text("--- Advanced Editing Placeholder ---", textAlign: TextAlign.center, style: theme.textTheme.caption),
-          // TODO: (Advanced Editing) Add UI controls for features like image filters, text stroke, text alignment, layer management etc. here.
-          // Example:
-          // ElevatedButton(onPressed: () {/* Open image filter options */}, child: Text("Apply Image Filter")),
-          // ElevatedButton(onPressed: () {/* Add new text layer */}, child: Text("Add Text Layer")),
         ],
       ),
     );
   }
 
   Widget _buildColorButton(Color color, String tooltip) {
+    // ... (This method remains unchanged from the previous version)
     bool isSelected = _textColor == color;
     return Tooltip(
       message: tooltip,
@@ -349,19 +381,19 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ... (This method remains unchanged from the previous version)
     return Scaffold(
       appBar: AppBar(
         title: const Text('Preview & Edit Meme'),
         elevation: 1.0,
         actions: [
-          // TODO: (Advanced Editing) Add Undo/Redo buttons here.
           _isSharing
             ? const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
                 child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))))
             : IconButton(
                 icon: const Icon(Icons.share_outlined),
-                tooltip: 'Share Meme', // Semantics label
+                tooltip: 'Share Meme',
                 onPressed: _isSaving ? null : _shareMeme,
               ),
           _isSaving
@@ -370,7 +402,7 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
                   child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))))
               : IconButton(
                   icon: const Icon(Icons.save_alt_outlined),
-                  tooltip: 'Save Meme', // Semantics label
+                  tooltip: 'Save Meme',
                   onPressed: _isSharing ? null : _saveMeme,
                 ),
         ],
@@ -389,4 +421,5 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     );
   }
 }
+
 ```
