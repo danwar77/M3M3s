@@ -1,207 +1,236 @@
+import 'dart:async'; // For StreamSubscription
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// It's good practice to initialize Supabase (or other services)
-// in main() if they are needed globally before the app runs.
-// For this basic structure, we'll keep it simple.
-// import 'package:supabase_flutter/supabase_flutter.dart'; // Example
+// --- Placeholder Screens (Simplified for this file's context) ---
+// In a real app, these would be imported from their respective files.
+// For this subtask, LoginScreen and SignUpScreen are defined in their own files
+// and would be imported into main_app_structure.dart if it were the true main.dart.
+// However, to make this file self-contained for the tool, we use these simple placeholders.
 
-// --- Placeholder Screens ---
-// These would typically be in their own files (e.g., screens/create_screen.dart)
+class LoginScreenPlaceholder extends StatelessWidget { // Renamed to avoid conflict if importing real LoginScreen
+  const LoginScreenPlaceholder({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Login')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Login Screen', style: TextStyle(fontSize: 20)),
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: () {
+                // TODO: Navigate to a conceptual SignUpScreen if it were defined here
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Navigate to Sign Up (Placeholder)')),
+                );
+              },
+              child: const Text('Go to Sign Up (Placeholder)'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-/// Placeholder for the screen where users can create or start generating memes.
-/// This might also serve as a "home" or "welcome" screen.
 class CreateScreen extends StatelessWidget {
   const CreateScreen({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(Icons.add_photo_alternate_outlined, size: 80, color: Colors.grey),
-          SizedBox(height: 20),
-          Text(
-            'Create / Welcome Screen Area',
-            style: TextStyle(fontSize: 20, color: Colors.grey),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Users will start their meme creation journey here, '
-              'select templates, or input text for AI generation.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const Center(child: Text('Create Screen (Home)'));
 }
 
-/// Placeholder for the screen where users can view their saved meme history.
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(Icons.history_edu_outlined, size: 80, color: Colors.grey),
-          SizedBox(height: 20),
-          Text(
-            'Meme History Screen Area',
-            style: TextStyle(fontSize: 20, color: Colors.grey),
-          ),
-           Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'This screen will display a list of memes previously generated and saved by the user.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const Center(child: Text('History Screen'));
 }
 
-// --- Main Application Widget ---
-
-/// The root widget of the Meme Generator application.
-/// It sets up the [MaterialApp], defines the theme, and specifies the home screen.
-class MemeApp extends StatelessWidget {
-  const MemeApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Meme Generator App',
-      debugShowCheckedModeBanner: false, // Optional: remove debug banner
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple, // Changed to deepPurple for a bit of fun
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light, // Or Brightness.dark for a dark theme
-        ),
-        useMaterial3: true,
-        // Further theme customizations can go here:
-        // appBarTheme: AppBarTheme(
-        //   backgroundColor: Colors.deepPurpleAccent,
-        //   foregroundColor: Colors.white,
-        // ),
-        // bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        //   selectedItemColor: Colors.deepPurpleAccent,
-        //   unselectedItemColor: Colors.grey[600],
-        // ),
-      ),
-      home: const MainScreen(), // The main screen with BottomNavigationBar
-    );
-  }
-}
-
-// --- Screen with Bottom Navigation Bar ---
-
-/// A stateful widget that manages the main application screen,
-/// including a [BottomNavigationBar] to switch between different sections
-/// like "Create" and "History".
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
-
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0; // Index for the currently selected tab
+  int _selectedIndex = 0;
+  static const List<Widget> _widgetOptions = <Widget>[CreateScreen(), HistoryScreen()];
+  static const List<String> _appBarTitles = <String>['Create Meme', 'My History'];
 
-  // List of widgets to display in the body based on the selected tab index.
-  // These are the main sections of our app.
-  static const List<Widget> _widgetOptions = <Widget>[
-    CreateScreen(), // Corresponds to index 0
-    HistoryScreen(),  // Corresponds to index 1
-  ];
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
-  // List of titles for the AppBar corresponding to each screen.
-  static const List<String> _appBarTitles = <String>[
-    'Create Meme',
-    'My Meme History',
-  ];
+  Future<void> _performLogout() async {
+    if (!mounted) return;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context); // For SnackBar theming
 
-  /// Handles tap events on the BottomNavigationBar items.
-  /// Updates the `_selectedIndex` to switch the displayed screen.
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    scaffoldMessenger.removeCurrentSnackBar(); // Clear previous SnackBars
+
+    try {
+      await Supabase.instance.client.auth.signOut();
+      // The onAuthStateChange listener in MemeApp will handle navigation to LoginScreen.
+      // No need for explicit navigation here if listener is set up correctly.
+      if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: const Text('Successfully logged out.'),
+              backgroundColor: Colors.green.shade700 // Consistent success color
+            ),
+          );
+      }
+    } on AuthException catch (e) {
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Logout failed: ${e.message}'),
+              backgroundColor: theme.colorScheme.error
+            ),
+          );
+        }
+    } catch (e) {
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('An unexpected error occurred during logout: ${e.toString()}'),
+              backgroundColor: theme.colorScheme.error
+            ),
+          );
+        }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_appBarTitles[_selectedIndex]), // Dynamically set AppBar title
-        // actions: [ // Example: Add an action button to AppBar
-        //   if (_selectedIndex == 0) // Only show for Create screen
-        //     IconButton(
-        //       icon: Icon(Icons.info_outline),
-        //       onPressed: () {
-        //         // Show some info
-        //       },
-        //     ),
-        // ],
+        title: Text(_appBarTitles[_selectedIndex]),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: _performLogout, // Call the implemented logout method
+          )
+        ],
       ),
-      body: Center(
-        // Display the widget from _widgetOptions based on the current index
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
+      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            activeIcon: Icon(Icons.add_circle), // Optional: different icon when active
-            label: 'Create',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history), // Optional: different icon when active
-            label: 'History',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Create'),
+          BottomNavigationBarItem(icon: Icon(Icons.history_outlined), label: 'History'),
         ],
-        currentIndex: _selectedIndex, // Highlights the current tab
-        selectedItemColor: Theme.of(context).colorScheme.primary, // Use theme color
-        unselectedItemColor: Colors.grey, // Optional: for inactive tabs
-        onTap: _onItemTapped, // Callback for when a tab is tapped
-        // type: BottomNavigationBarType.shifting, // Optional: for different animation/style
-        // showUnselectedLabels: false, // Optional: to hide labels of unselected items
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
 }
 
-// --- Main Function ---
+// --- Main Application Logic ---
 
-/// The entry point of the Flutter application.
-void main() async {
-  // It's crucial to ensure Flutter bindings are initialized before any async operations
-  // like Supabase initialization if they are done here.
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Example: Initialize Supabase (or other services) here if needed globally
-  // try {
-  //   await Supabase.initialize(
-  //     url: 'YOUR_SUPABASE_URL',       // From --dart-define or config
-  //     anonKey: 'YOUR_SUPABASE_ANON_KEY', // From --dart-define or config
-  //   );
-  // } catch (e) {
-  //   print("Error initializing Supabase: $e");
-  //   // Handle initialization error, maybe show an error screen
-  // }
-
+  // TODO: Replace with your actual Supabase URL and Anon Key.
+  await Supabase.initialize(
+    url: 'YOUR_SUPABASE_URL',
+    anonKey: 'YOUR_SUPABASE_ANON_KEY',
+  );
   runApp(const MemeApp());
+}
+
+class MemeApp extends StatefulWidget {
+  const MemeApp({super.key});
+
+  @override
+  State<MemeApp> createState() => _MemeAppState();
+}
+
+class _MemeAppState extends State<MemeApp> {
+  Session? _initialSession = Supabase.instance.client.auth.currentSession;
+  StreamSubscription<AuthState>? _authStateSubscription;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAuthStateListener();
+  }
+
+  void _initializeAuthStateListener() {
+    _authStateSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (mounted) {
+        setState(() {
+          _initialSession = data.session;
+          _isLoading = false;
+        });
+      }
+    }, onError: (error) {
+      if (mounted) {
+         print("Auth listener error: $error");
+         setState(() {
+           _isLoading = false;
+         });
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 500), () { // Reduced delay slightly
+      if (mounted && _isLoading) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authStateSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text("Initializing App..."),
+              ],
+            ),
+          ),
+        ),
+        debugShowCheckedModeBanner: false,
+      );
+    }
+
+    return MaterialApp(
+      title: 'MemeMarvel App',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+        snackBarTheme: SnackBarThemeData( // Consistent SnackBar behavior
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+          elevation: 4.0,
+        )
+      ),
+      home: _initialSession == null ? const LoginScreenPlaceholder() : const MainScreen(), // Using placeholder LoginScreen
+      debugShowCheckedModeBanner: false,
+      // TODO: Define actual routes when LoginScreen and SignUpScreen are in separate files and imported.
+      // routes: {
+      //   '/login': (context) => const LoginScreen(),
+      //   '/main': (context) => const MainScreen(),
+      //   '/signup': (context) => const SignUpScreen(),
+      // },
+    );
+  }
 }
 ```
