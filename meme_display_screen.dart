@@ -1,32 +1,31 @@
 import 'package:flutter/material.dart';
 import 'dart:io'; // For File type
 import 'dart:typed_data'; // For Uint8List
-import 'dart:ui' as ui; // For ui.Image to work with RenderRepaintBoundary
+import 'dart:ui' as ui; // For ui.Image
 import 'package:flutter/rendering.dart'; // For RenderRepaintBoundary
-// import 'package:supabase_flutter/supabase_flutter.dart'; // TODO: Uncomment for actual Supabase calls
-// import 'package:share_plus/share_plus.dart'; // TODO: Uncomment for actual sharing
-// import 'package:path_provider/path_provider.dart'; // TODO: Uncomment for temporary file storage if needed for sharing
+import 'package:supabase_flutter/supabase_flutter.dart'; // For save functionality
+import 'package:share_plus/share_plus.dart'; // Import for actual sharing
+import 'package:path_provider/path_provider.dart'; // For temporary file storage
 
-// (MemeData class remains the same as previously defined)
 class MemeData {
   final String? topText;
   final String? bottomText;
-  final String? imageUrl; // URL for network images (templates)
-  final File? localImageFile; // File for local/uploaded images
+  final String? imageUrl;
+  final File? localImageFile;
+  final String? templateId;
 
   MemeData({
     this.topText,
     this.bottomText,
     this.imageUrl,
     this.localImageFile,
-  }) : assert(imageUrl != null || localImageFile != null, 'Either imageUrl or localImageFile must be provided.');
+    this.templateId,
+  }) : assert(imageUrl != null || localImageFile != null, 'Either imageUrl or localImageFile must be provided for display.');
 }
 
 class MemeDisplayScreen extends StatefulWidget {
   final MemeData initialMemeData;
-
   const MemeDisplayScreen({super.key, required this.initialMemeData});
-
   @override
   State<MemeDisplayScreen> createState() => _MemeDisplayScreenState();
 }
@@ -37,10 +36,9 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   double _fontSize = 32.0;
   Color _textColor = Colors.white;
   String _fontFamily = 'Impact';
-
-  // Key for the RepaintBoundary to capture the meme image
   final GlobalKey _memeBoundaryKey = GlobalKey();
-  bool _isSaving = false; // To show loading indicator and disable buttons
+  bool _isSaving = false;
+  bool _isSharing = false;
 
   // TODO: (Advanced Editing) Explore adding a list of custom fonts.
   // TODO: (Advanced Editing) Implement a more comprehensive color picker.
@@ -55,7 +53,6 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     super.initState();
     _topTextController = TextEditingController(text: widget.initialMemeData.topText ?? '');
     _bottomTextController = TextEditingController(text: widget.initialMemeData.bottomText ?? '');
-    // Add listeners to update the preview when text changes
     _topTextController.addListener(() => setState(() {}));
     _bottomTextController.addListener(() => setState(() {}));
   }
@@ -67,35 +64,33 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     super.dispose();
   }
 
-  /// Captures the widget identified by _memeBoundaryKey as an image (Uint8List).
   Future<Uint8List?> _captureMemeAsImage() async {
-    if (!mounted) return null; // Ensure widget is still in the tree
+    if (!mounted) return null;
     try {
       RenderRepaintBoundary boundary = _memeBoundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      // Increase pixelRatio for higher quality images, default is 1.0
       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
       ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       return byteData?.buffer.asUint8List();
     } catch (e) {
       print("Error capturing meme: $e");
       if (mounted) {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error capturing meme image: ${e.toString()}')),
+          SnackBar(content: Text('Error capturing meme image: ${e.toString()}'), backgroundColor: Colors.redAccent.shade700),
         );
       }
       return null;
     }
   }
 
-  /// Handles saving the meme: captures image, uploads to Storage, saves metadata to DB.
   Future<void> _saveMeme() async {
-    if (_isSaving) return; // Prevent multiple save attempts
+    if (_isSaving || _isSharing) return;
+    if (!mounted) return;
     setState(() => _isSaving = true);
 
-    final scaffoldMessenger = ScaffoldMessenger.of(context); // Cache for async gap
-    scaffoldMessenger.showSnackBar(
-      const SnackBar(content: Text('Saving meme...'), duration: Duration(milliseconds: 2500)),
-    );
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.removeCurrentSnackBar();
+    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Saving meme...'), duration: Duration(milliseconds: 1500)));
 
     final imageBytes = await _captureMemeAsImage();
     if (imageBytes == null) {
@@ -103,126 +98,117 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
       return;
     }
 
-    // --- TODO: Implement actual Supabase saving logic ---
-    // Ensure supabase_flutter is initialized and user is logged in.
-    // final supabase = Supabase.instance.client;
-    // final userId = supabase.auth.currentUser?.id;
+    final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
 
-    // if (userId == null) {
-    //   if (mounted) {
-    //     scaffoldMessenger.showSnackBar(const SnackBar(backgroundColor: Colors.red, content: Text('Error: User not logged in.')));
-    //     setState(() => _isSaving = false);
-    //   }
-    //   return;
-    // }
-
-    // final imageFileName = '${DateTime.now().millisecondsSinceEpoch}_${userId.substring(0, 6)}.png';
-    // final imagePath = '$userId/memes/$imageFileName'; // Store in a user-specific folder
-
-    try {
-      // 1. Upload image to Supabase Storage (Conceptual)
-      // print('Uploading image to Supabase Storage at path: $imagePath');
-      // await supabase.storage.from('user_memes').uploadBinary(
-      //   imagePath,
-      //   imageBytes,
-      //   fileOptions: const FileOptions(cacheControl: '3600', upsert: false, contentType: 'image/png'),
-      // );
-      // final String uploadedImageUrl = supabase.storage.from('user_memes').getPublicUrl(imagePath);
-      // print('Image uploaded, URL: $uploadedImageUrl');
-
-      // Simulate upload delay and get a placeholder URL
-      await Future.delayed(const Duration(seconds: 3));
-      const String uploadedImageUrl = "https://mockstorage.com/path/to/uploaded_meme.png"; // Placeholder
-      print('Simulated image upload complete. URL: $uploadedImageUrl');
-
-      // 2. Save metadata to Supabase Database (Conceptual)
-      // print('Saving meme metadata to database...');
-      // final response = await supabase.from('memes').insert({
-      //   'user_id': userId,
-      //   'image_url': uploadedImageUrl, // Store the public URL or path from storage
-      //   'text_input': {'top': _topTextController.text, 'bottom': _bottomTextController.text},
-      //   // 'template_id': widget.initialMemeData.templateId, // Pass templateId if available and relevant
-      //   'is_custom_image': widget.initialMemeData.localImageFile != null || widget.initialMemeData.imageUrl == null, // Heuristic
-      //   'visibility': 'private', // Default visibility
-      //   'tags': [], // Add tags if you have a tagging system
-      //   // 'analysis_results': {}, // Add analysis results if available
-      // }).select(); // Use .select() if you want the inserted row back
-
-      // if (response.error != null) {
-      //   print('Database insert error: ${response.error!.message}');
-      //   throw response.error!;
-      // }
-      // print('Meme metadata saved successfully: ${response.data}');
-      await Future.delayed(const Duration(seconds: 1)); // Simulate DB save
-      print('Simulated metadata save complete.');
-
-
+    if (userId == null) {
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text('Meme saved successfully! 🎉'), backgroundColor: Colors.green),
-        );
-        // Optionally, navigate away or provide further actions
-        // Navigator.of(context).pop(); // Example: Go back after saving
-      }
-    } catch (e) {
-      print("Error saving meme: $e");
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(backgroundColor: Colors.red, content: Text('Error saving meme: ${e.toString()}')),
-        );
-      }
-    } finally {
-      if (mounted) {
+        scaffoldMessenger.removeCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Error: User not logged in.'), backgroundColor: Colors.redAccent.shade700));
         setState(() => _isSaving = false);
       }
+      return;
+    }
+
+    final imageFileName = 'meme_${DateTime.now().millisecondsSinceEpoch}_${userId.substring(0,8)}.png';
+    final imagePath = '$userId/$imageFileName';
+
+    try {
+      await supabase.storage.from('user_memes').uploadBinary(
+        imagePath,
+        imageBytes,
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: false, contentType: 'image/png'),
+      );
+      final String uploadedImageUrl = supabase.storage.from('user_memes').getPublicUrl(imagePath);
+      final Map<String, dynamic> memeDataToInsert = {
+        'user_id': userId, 'image_url': uploadedImageUrl,
+        'text_input': {'top': _topTextController.text.trim(), 'bottom': _bottomTextController.text.trim()},
+        'template_id': widget.initialMemeData.templateId,
+        'is_custom_image': widget.initialMemeData.localImageFile != null || (widget.initialMemeData.imageUrl != null && widget.initialMemeData.templateId == null),
+        'visibility': 'private',
+      };
+      if (memeDataToInsert['template_id'] == null) memeDataToInsert.remove('template_id');
+      await supabase.from('memes').insert(memeDataToInsert);
+
+      if (mounted) {
+        scaffoldMessenger.removeCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Meme saved successfully! 🎉'), backgroundColor: Colors.green.shade700));
+      }
+    } on StorageException catch (error) {
+        if (mounted) {
+          scaffoldMessenger.removeCurrentSnackBar();
+          scaffoldMessenger.showSnackBar(SnackBar(content: Text('Storage Error: ${error.message}'), backgroundColor: Colors.redAccent.shade700));
+        }
+    } on PostgrestException catch (error) {
+        if (mounted) {
+          scaffoldMessenger.removeCurrentSnackBar();
+          scaffoldMessenger.showSnackBar(SnackBar(content: Text('Database Error: ${error.message}'), backgroundColor: Colors.redAccent.shade700));
+        }
+    } catch (e) {
+      if (mounted) {
+        scaffoldMessenger.removeCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('An unexpected error occurred: ${e.toString()}'), backgroundColor: Colors.redAccent.shade700));
+      }
+    } finally {
+      if(mounted) setState(() => _isSaving = false);
     }
   }
 
-  /// Handles sharing the meme: captures image and uses share_plus.
   Future<void> _shareMeme() async {
-    if (_isSaving) return;
+    if (_isSaving || _isSharing) return;
+    if (!mounted) return;
+
+    setState(() => _isSharing = true);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    scaffoldMessenger.showSnackBar(
-      const SnackBar(content: Text('Preparing meme for sharing...')),
-    );
+    scaffoldMessenger.removeCurrentSnackBar();
+    scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Preparing meme for sharing...')));
 
     final imageBytes = await _captureMemeAsImage();
-    if (imageBytes == null) return;
-
-    // --- TODO: Implement actual sharing using share_plus ---
-    // Ensure share_plus and path_provider packages are added to pubspec.yaml
-    try {
-      // final tempDir = await getTemporaryDirectory();
-      // final filePath = '${tempDir.path}/meme_to_share.png';
-      // final file = await File(filePath).create();
-      // await file.writeAsBytes(imageBytes);
-      // print('Meme saved to temporary file: $filePath');
-
-      // await Share.shareXFiles(
-      //   [XFile(filePath)],
-      //   text: 'Check out this awesome meme I made with MemeMarvel!'
-      // );
-      // print('Share dialog invoked.');
-
-      // Simulate sharing action
-      await Future.delayed(const Duration(seconds: 1));
-      print("Simulated sharing of image bytes (${imageBytes.length} bytes)");
+    if (imageBytes == null) {
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text('Meme shared (simulated)! 🚀'), backgroundColor: Colors.blue),
-        );
+        scaffoldMessenger.removeCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Could not prepare meme for sharing.'), backgroundColor: Colors.redAccent.shade700));
+        setState(() => _isSharing = false);
+      }
+      return;
+    }
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'meme_share_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(imageBytes);
+      print('Meme saved to temporary file for sharing: ${file.path}');
+
+      final shareResult = await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/png')],
+        text: 'Check out this awesome meme I made with MemeMarvel!',
+        subject: 'Meme from MemeMarvel App'
+      );
+
+      if (mounted) {
+        scaffoldMessenger.removeCurrentSnackBar();
+        if (shareResult.status == ShareResultStatus.success) {
+          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Meme shared!'), backgroundColor: Colors.green.shade700));
+        } else if (shareResult.status == ShareResultStatus.dismissed) {
+          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Sharing dismissed.'), backgroundColor: Colors.orangeAccent.shade700));
+        } else {
+           scaffoldMessenger.showSnackBar(SnackBar(content: Text('Sharing unavailable or failed: ${shareResult.status}'), backgroundColor: Colors.grey.shade700));
+        }
       }
     } catch (e) {
       print("Error sharing meme: $e");
       if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(backgroundColor: Colors.red, content: Text('Error sharing meme: ${e.toString()}')),
-        );
+        scaffoldMessenger.removeCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('Error sharing meme: ${e.toString()}'), backgroundColor: Colors.redAccent.shade700));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
       }
     }
   }
 
-  /// Builds the core meme preview widget, wrapped in RepaintBoundary for capturing.
   Widget _buildMemePreview(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     Widget imageWidget;
@@ -261,7 +247,6 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
       ],
     );
 
-    // Key part: Wrap the visual representation of the meme with RepaintBoundary
     return RepaintBoundary(
       key: _memeBoundaryKey,
       child: AspectRatio(
@@ -370,19 +355,23 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
         elevation: 1.0,
         actions: [
           // TODO: (Advanced Editing) Add Undo/Redo buttons here.
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Share Meme',
-            onPressed: _isSaving ? null : _shareMeme, // Disable while saving
-          ),
+          _isSharing
+            ? const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))))
+            : IconButton(
+                icon: const Icon(Icons.share_outlined),
+                tooltip: 'Share Meme', // Semantics label
+                onPressed: _isSaving ? null : _shareMeme,
+              ),
           _isSaving
               ? const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                  child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)))
+                  child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))))
               : IconButton(
                   icon: const Icon(Icons.save_alt_outlined),
-                  tooltip: 'Save Meme',
-                  onPressed: _saveMeme,
+                  tooltip: 'Save Meme', // Semantics label
+                  onPressed: _isSharing ? null : _saveMeme,
                 ),
         ],
       ),
@@ -400,5 +389,4 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     );
   }
 }
-
 ```

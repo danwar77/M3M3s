@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-// import 'package:supabase_flutter/supabase_flutter.dart'; // Uncomment for actual Supabase calls
+import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 
 // Basic model for a Meme item.
-// This should be adapted to your actual data model from Supabase,
-// especially the fields retrieved and how they map (e.g., text_input JSON).
 class MemeHistoryItem {
   final String id;
-  final String imageUrl; // URL or path in Supabase Storage
-  final String? topText;    // Optional, might be part of a JSON object in DB
-  final String? bottomText; // Optional
+  final String imageUrl;
+  final String? topText;
+  final String? bottomText;
   final DateTime createdAt;
 
   MemeHistoryItem({
@@ -19,17 +17,22 @@ class MemeHistoryItem {
     required this.createdAt,
   });
 
-  // Example factory constructor if fetching from a Map (like Supabase response)
-  // factory MemeHistoryItem.fromMap(Map<String, dynamic> map) {
-  //   final textInput = map['text_input'] as Map<String, dynamic>?;
-  //   return MemeHistoryItem(
-  //     id: map['id'] as String,
-  //     imageUrl: map['image_url'] as String,
-  //     topText: textInput?['top'] as String?,
-  //     bottomText: textInput?['bottom'] as String?,
-  //     createdAt: DateTime.parse(map['created_at'] as String),
-  //   );
-  // }
+  factory MemeHistoryItem.fromMap(Map<String, dynamic> map) {
+    String? tText;
+    String? bText;
+    if (map['text_input'] != null && map['text_input'] is Map) {
+        final textInputData = map['text_input'] as Map<String, dynamic>;
+        tText = textInputData['top'] as String?;
+        bText = textInputData['bottom'] as String?;
+    }
+    return MemeHistoryItem(
+      id: map['id'] as String,
+      imageUrl: map['image_url'] as String,
+      topText: tText,
+      bottomText: bText,
+      createdAt: DateTime.parse(map['created_at'] as String),
+    );
+  }
 }
 
 class HistoryScreen extends StatefulWidget {
@@ -41,7 +44,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   late Future<List<MemeHistoryItem>> _memesFuture;
-  bool _isFetching = false; // To prevent multiple simultaneous fetches
+  // bool _isFetchingData = false; // _isFetchingData is not strictly necessary with FutureBuilder's ConnectionState
 
   @override
   void initState() {
@@ -49,92 +52,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _memesFuture = _fetchMemeHistory();
   }
 
-  // Mock data fetching function
-  // TODO: Replace this with actual Supabase calls.
   Future<List<MemeHistoryItem>> _fetchMemeHistory() async {
-    if (_isFetching) return _memesFuture; // Return current future if already fetching
-    _isFetching = true;
-
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
-
-    // --- TODO: Replace with actual Supabase call ---
-    // final supabase = Supabase.instance.client;
-    // final userId = supabase.auth.currentUser?.id;
-
-    // if (userId == null) {
-    //   _isFetching = false;
-    //   // It's better to handle "not logged in" state via AuthState listener
-    //   // and not even show HistoryScreen, or show a specific "Please log in" message.
-    //   return Future.error('User not logged in. Please log in to see your history.');
+    // if (mounted) { // Not needed here as FutureBuilder handles its own state
+    //   setState(() { _isFetchingData = true; });
     // }
 
-    // try {
-    //   final response = await supabase
-    //       .from('memes') // Your Supabase table name for memes
-    //       .select() // Select all columns or specify: 'id, image_url, text_input, created_at'
-    //       .eq('user_id', userId)
-    //       .order('created_at', ascending: false)
-    //       .limit(50); // Add pagination later if needed
+    final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
 
-    //   // The actual type of response.data depends on how PostgREST client is configured,
-    //   // usually List<Map<String, dynamic>>
-    //   final List<dynamic> data = response as List<dynamic>;
+    if (userId == null) {
+      // if (mounted) { setState(() => _isFetchingData = false); }
+      return Future.error('User not authenticated. Please log in to view history.');
+    }
 
-    //   _isFetching = false;
-    //   if (data.isEmpty) {
-    //     return []; // Return empty list if no data
-    //   }
+    try {
+      final response = await supabase
+          .from('memes')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(100);
 
-    //   return data.map((item) {
-    //     final Map<String, dynamic> memeData = item as Map<String, dynamic>;
-    //     final textInput = memeData['text_input'] as Map<String, dynamic>?;
-    //     return MemeHistoryItem(
-    //       id: memeData['id'] as String,
-    //       imageUrl: memeData['image_url'] as String, // This should be a publicly accessible URL or requires signing
-    //       topText: textInput?['top'] as String?,
-    //       bottomText: textInput?['bottom'] as String?,
-    //       createdAt: DateTime.parse(memeData['created_at'] as String),
-    //     );
-    //   }).toList();
-    // } on PostgrestException catch (e) {
-    //   _isFetching = false;
-    //   print('Supabase fetch error: ${e.message}');
-    //   return Future.error('Failed to load memes: ${e.message}');
-    // } catch (e) {
-    //   _isFetching = false;
-    //   print('Generic fetch error: $e');
-    //   return Future.error('An unexpected error occurred while fetching memes.');
-    // }
-    // --- End Supabase Call Placeholder ---
+      final List<MemeHistoryItem> memes = response
+          .map((item) => MemeHistoryItem.fromMap(item as Map<String, dynamic>))
+          .toList();
 
+      // if (mounted) { setState(() => _isFetchingData = false); }
+      return memes;
 
-    // --- Mock Data Implementation ---
-    _isFetching = false; // Reset fetch flag
-
-    // Simulate an error state:
-    // return Future.error('Failed to load memes. Please try again later.');
-
-    // Simulate an empty state:
-    // return [];
-
-    // Simulate successful data fetch:
-    return List.generate(10, (index) {
-      return MemeHistoryItem(
-        id: 'meme_mock_id_$index',
-        imageUrl: 'https://picsum.photos/seed/memeMock$index/250/250', // Using picsum for placeholders
-        topText: 'Mock Top Text ${index + 1}',
-        bottomText: 'Mock Bottom Text ${index + 1}',
-        createdAt: DateTime.now().subtract(Duration(days: index * 2, hours: index * 3)),
-      );
-    });
-    // --- End Mock Data ---
+    } on PostgrestException catch (error) {
+      print('Supabase fetch error: ${error.message}');
+      // if (mounted) { setState(() => _isFetchingData = false); }
+      return Future.error('Server error: ${error.message}');
+    } catch (e) {
+      print('Generic fetch error: $e');
+      // if (mounted) { setState(() => _isFetchingData = false); }
+      return Future.error('An unexpected error occurred: ${e.toString()}');
+    }
   }
 
   Future<void> _refreshHistory() async {
-    // Only trigger a new fetch if not already fetching.
-    // The FutureBuilder will then react to the new future instance.
-    if (!_isFetching) {
+    if (mounted) {
       setState(() {
         _memesFuture = _fetchMemeHistory();
       });
@@ -144,8 +102,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // The AppBar is typically handled by MainScreen when HistoryScreen is a tab.
     return Scaffold(
       body: FutureBuilder<List<MemeHistoryItem>>(
         future: _memesFuture,
@@ -153,6 +109,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
+            String errorMessage = snapshot.error.toString();
+            bool isAuthError = false;
+            if (errorMessage.contains('User not authenticated')) {
+                errorMessage = 'Please log in to see your meme history.';
+                isAuthError = true;
+            } else if (snapshot.error is PostgrestException) {
+                errorMessage = 'Could not load memes: ${(snapshot.error as PostgrestException).message}';
+            } else {
+                errorMessage = 'An error occurred. Tap to retry.';
+            }
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -161,25 +127,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   children: [
                     Icon(Icons.error_outline_rounded, color: theme.colorScheme.error, size: 60),
                     const SizedBox(height: 16),
-                    Text(
-                      'Oops! Something went wrong.',
-                      style: theme.textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
+                    Text('Oops!', style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.error)),
                     const SizedBox(height: 8),
-                    Text(
-                      '${snapshot.error}', // Display the actual error message
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
-                    ),
+                    Text(errorMessage, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error)),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
-                      onPressed: _refreshHistory,
+                      icon: Icon(isAuthError ? Icons.login : Icons.refresh_rounded),
+                      label: Text(isAuthError ? 'Login' : 'Retry'),
+                      onPressed: () {
+                        if (isAuthError) {
+                          // TODO: Navigate to LoginScreen. This requires a router setup.
+                          // For now, show a SnackBar or print.
+                          ScaffoldMessenger.of(context).showSnackBar(
+                             SnackBar(content: const Text('Login navigation placeholder.'), backgroundColor: theme.colorScheme.secondary)
+                          );
+                        } else {
+                          _refreshHistory();
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
+                        backgroundColor: isAuthError ? theme.colorScheme.secondary : theme.colorScheme.primary,
+                        foregroundColor: isAuthError ? theme.colorScheme.onSecondary : theme.colorScheme.onPrimary
                       ),
                     )
                   ],
@@ -195,21 +163,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   children: [
                     Icon(Icons.image_search_outlined, size: 80, color: Colors.grey[500]),
                     const SizedBox(height: 20),
-                    Text(
-                      'No Memes Yet!',
-                      style: theme.textTheme.headlineSmall?.copyWith(color: Colors.grey[700]),
-                    ),
+                    Text('No Memes Yet!', style: theme.textTheme.headlineSmall?.copyWith(color: Colors.grey[700])),
                     const SizedBox(height: 10),
-                    Text(
-                      "Looks like your meme gallery is empty.\nGo create some masterpieces!",
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                    ),
+                    Text("Your meme gallery is empty.\nTime to create some masterpieces!", textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Check Again'),
-                      onPressed: _refreshHistory,
+                      icon: const Icon(Icons.add_circle_outline), // Changed icon
+                      label: const Text('Create First Meme!'), // Changed label
+                      onPressed: () {
+                        // TODO: Navigate to Create Tab (index 0). This requires MainScreen's _onItemTapped
+                        // or a shared state/callback mechanism to change the tab.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                           SnackBar(content: const Text('Navigate to Create tab placeholder.'), backgroundColor: theme.colorScheme.primary)
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)
+                      ),
                     )
                   ],
                 ),
@@ -217,37 +189,41 @@ class _HistoryScreenState extends State<HistoryScreen> {
             );
           }
 
-          // Data has been successfully fetched and is not empty
           final List<MemeHistoryItem> memes = snapshot.data!;
           return RefreshIndicator(
             onRefresh: _refreshHistory,
             child: GridView.builder(
-              padding: const EdgeInsets.all(12.0), // Increased padding
+              padding: const EdgeInsets.all(12.0),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2, // Responsive columns
-                crossAxisSpacing: 12.0, // Increased spacing
-                mainAxisSpacing: 12.0,  // Increased spacing
-                childAspectRatio: 0.85, // Adjust for a slightly taller item if text is below
+                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
+                crossAxisSpacing: 12.0,
+                mainAxisSpacing: 12.0,
+                childAspectRatio: 0.85,
               ),
               itemCount: memes.length,
               itemBuilder: (context, index) {
                 final meme = memes[index];
                 return Card(
                   elevation: 3.0,
-                  clipBehavior: Clip.antiAlias, // Ensures image respects card rounded corners
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)), // Rounded corners for the card
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
                   child: InkWell(
                     onTap: () {
                       // TODO: Navigate to a meme detail screen or an edit screen
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => MemeDetailScreen(memeId: meme.id)));
+                      // Example:
+                      // Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                      //   MemeDisplayScreen(initialMemeData: MemeData(imageUrl: meme.imageUrl, topText: meme.topText, bottomText: meme.bottomText, templateId: meme.template_id_if_any)) // Ensure MemeData can take templateId if needed
+                      // ));
+                      ScaffoldMessenger.of(context).removeCurrentSnackBar(); // Clear previous snackbars
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Tapped on meme: ${meme.id} - ${meme.topText ?? ''}'),
+                          content: Text('Tapped on meme: ${meme.topText ?? meme.id}'),
                           duration: const Duration(seconds: 1),
+                          backgroundColor: theme.colorScheme.secondary,
                         ),
                       );
                     },
-                    child: Column( // Using Column to place text below the image
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
@@ -276,8 +252,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            // Display top text or a default name if no text
-                            (meme.topText?.isNotEmpty ?? false) ? meme.topText! : 'Meme ${meme.id.substring(0,6)}',
+                            (meme.topText?.isNotEmpty ?? false)
+                                ? meme.topText!
+                                : (meme.bottomText?.isNotEmpty ?? false)
+                                    ? meme.bottomText!
+                                    : 'Meme',
                             style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
                             textAlign: TextAlign.center,
                             maxLines: 1,
