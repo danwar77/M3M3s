@@ -32,6 +32,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
   List<TemplateInfo> _allFetchedTemplates = [];
   int _templatesCurrentPage = 0;
   final int _templatesPageSize = 20;
+  static const double _templateScrollOffsetThreshold = 200.0; // Threshold for template browser
   bool _isLoadingInitialTemplates = false;
   bool _isLoadingMoreTemplates = false;
   bool _hasMoreTemplates = true;
@@ -43,7 +44,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
     super.initState();
     _templateScrollController.addListener(() {
       if (_templateScrollController.position.pixels >=
-          _templateScrollController.position.maxScrollExtent - 200 &&
+          _templateScrollController.position.maxScrollExtent - _templateScrollOffsetThreshold &&
           _hasMoreTemplates &&
           !_isLoadingMoreTemplates &&
           !_isLoadingInitialTemplates &&
@@ -126,7 +127,16 @@ class _TextInputScreenState extends State<TextInputScreen> {
             SnackBar(
               content: Text('Failed to load more templates: ${error.message}'),
               backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 3),
+              duration: const Duration(seconds: 5), // Longer for action
+              action: SnackBarAction(
+                label: 'RETRY',
+                textColor: Theme.of(context).colorScheme.onError,
+                onPressed: () {
+                  if (mounted && !_isLoadingMoreTemplates && _hasMoreTemplates) { // Check before retrying
+                    _fetchTemplates(); // isInitialFetch defaults to false
+                  }
+                },
+              ),
             ),
           );
         }
@@ -145,7 +155,16 @@ class _TextInputScreenState extends State<TextInputScreen> {
             SnackBar(
               content: const Text('Failed to load more templates: An unexpected error occurred.'),
               backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 3),
+              duration: const Duration(seconds: 5), // Longer for action
+              action: SnackBarAction(
+                label: 'RETRY',
+                textColor: Theme.of(context).colorScheme.onError,
+                onPressed: () {
+                  if (mounted && !_isLoadingMoreTemplates && _hasMoreTemplates) { // Check before retrying
+                    _fetchTemplates(); // isInitialFetch defaults to false
+                  }
+                },
+              ),
             ),
           );
         }

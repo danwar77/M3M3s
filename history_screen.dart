@@ -47,6 +47,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // late Future<List<MemeHistoryItem>> _memesFuture; // REMOVE
   // bool _isFetching = false; // REMOVE or rename/repurpose if a general fetch flag was used differently
 
+  static const double _scrollOffsetThreshold = 200.0; // Threshold to trigger loading more items
+
   // New state variables for meme history pagination
   List<MemeHistoryItem> _allHistoryMemes = [];
   int _historyCurrentPage = 0; // 0-indexed for offset calculation
@@ -69,7 +71,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     // Add listener to scroll controller for infinite scrolling
     _historyScrollController.addListener(() {
-      if (_historyScrollController.position.pixels >= _historyScrollController.position.maxScrollExtent - 200 && // Trigger before exact bottom
+      if (_historyScrollController.position.pixels >= _historyScrollController.position.maxScrollExtent - _scrollOffsetThreshold && // Trigger before exact bottom
           _hasMoreHistory &&
           !_isLoadingMoreHistory &&
           !_isLoadingInitialHistory &&
