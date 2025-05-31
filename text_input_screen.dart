@@ -1,21 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'template_list_item.dart'; // Import TemplateListItem and TemplateInfo
-
-// Data class for passing data to MemeDisplayScreen.
-class MemeData {
-  final String? topText;
-  final String? bottomText;
-  final String? imageUrl;
-  final String? templateId;
-
-  MemeData({
-    this.topText,
-    this.bottomText,
-    this.imageUrl,
-    this.templateId,
-  });
-}
+import 'meme_display_screen.dart'; // Import MemeDisplayScreen and MemeData
 
 class TextInputScreen extends StatefulWidget {
   const TextInputScreen({super.key});
@@ -54,8 +40,6 @@ class _TextInputScreenState extends State<TextInputScreen> {
   Future<List<TemplateInfo>> _fetchTemplates() async {
     if (!mounted) return [];
     print("Fetching templates from Supabase...");
-    // Simulate network delay for testing loading indicator
-    // await Future.delayed(const Duration(seconds: 2));
     try {
       final response = await Supabase.instance.client
           .from('templates')
@@ -70,22 +54,21 @@ class _TextInputScreenState extends State<TextInputScreen> {
 
     } on PostgrestException catch (error) {
       print('Supabase fetch templates error: ${error.message}');
-      // SnackBar is shown by the FutureBuilder's error state, but good to log.
-      // if (mounted) {
-      //   ScaffoldMessenger.of(context).removeCurrentSnackBar();
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(content: Text('Failed to fetch templates: ${error.message}'), backgroundColor: Colors.redAccent.shade700),
-      //   );
-      // }
+      if (mounted) {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch templates: ${error.message}'), backgroundColor: Colors.redAccent.shade700),
+        );
+      }
       throw 'Failed to fetch templates: ${error.message}';
     } catch (e) {
       print('Generic fetch templates error: $e');
-      //  if (mounted) {
-      //   ScaffoldMessenger.of(context).removeCurrentSnackBar();
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(content: Text('An unexpected error occurred: $e'), backgroundColor: Colors.redAccent.shade700),
-      //   );
-      // }
+       if (mounted) {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('An unexpected error occurred: $e'), backgroundColor: Colors.redAccent.shade700),
+        );
+      }
       throw 'An unexpected error occurred while fetching templates: $e';
     }
   }
@@ -99,30 +82,37 @@ class _TextInputScreenState extends State<TextInputScreen> {
   }
 
   Future<void> _processMeme() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     FocusScope.of(context).unfocus();
+
+    // 1. Validate form first
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
+    // 2. Check for template selection (Safeguard, as button should be disabled)
     if (_selectedTemplateId == null || _selectedTemplateImageUrl == null) {
-      ScaffoldMessenger.of(context).removeCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.removeCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: const Text('Please select a template first!'),
-          backgroundColor: Colors.orangeAccent.shade700,
+          content: const Text('Internal error: Please select a template first.'), // Error message if somehow clicked
+          backgroundColor: Colors.redAccent.shade700,
         ),
       );
       return;
     }
 
-    setState(() => _isProcessing = true);
+    // All pre-checks passed, now set processing state
+    if(mounted) setState(() => _isProcessing = true);
     _suggestionResults = null;
 
     final topText = _topTextController.text.trim();
     final bottomText = _bottomTextController.text.trim();
-    final primaryTextForSuggestions = (topText.isNotEmpty ? topText : bottomText);
+    final primaryTextForSuggestions = (topText.isNotEmpty ? topText : (bottomText.isNotEmpty ? bottomText : "funny meme"));
 
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    Map<String, dynamic>? edgeFunctionResults;
 
     try {
       print('Calling get-meme-suggestions with text: "$primaryTextForSuggestions"');
@@ -134,68 +124,67 @@ class _TextInputScreenState extends State<TextInputScreen> {
         },
       );
 
-      final data = response.data as Map<String, dynamic>?;
-      if (data == null) {
+      edgeFunctionResults = response.data as Map<String, dynamic>?;
+      if (edgeFunctionResults == null) {
         throw Exception("No data received from Edge Function or data is not a map.");
       }
 
       if (mounted) {
         setState(() {
-          _suggestionResults = data;
+          _suggestionResults = edgeFunctionResults;
         });
+        final analysis = edgeFunctionResults['analyzedText'] as Map<String, dynamic>?;
+        final tone = analysis?['tone'] ?? 'N/A';
+        scaffoldMessenger.removeCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('Suggestions received! Tone: $tone.'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.blueAccent,
+          ),
+        );
       }
 
-      final analysis = data['analyzedText'] as Map<String, dynamic>?;
-      final tone = analysis?['tone'] ?? 'N/A';
-      final firstSuggestedTemplateList = data['suggestedTemplates'] as List<dynamic>?;
-      final firstSuggestedTemplate = firstSuggestedTemplateList?.firstOrNull as Map<String, dynamic>?;
+      if (mounted) { // Reset loading state before potential navigation
+        setState(() => _isProcessing = false);
+      } else {
+        return;
+      }
 
-      scaffoldMessenger.removeCurrentSnackBar();
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Suggestions received! Tone: $tone. Top Suggestion: ${firstSuggestedTemplate?['name'] ?? 'None'}'),
-          duration: const Duration(seconds: 3),
-          backgroundColor: Colors.blueAccent,
-        ),
+      final memeDataForDisplay = MemeData(
+        topText: topText,
+        bottomText: bottomText,
+        imageUrl: _selectedTemplateImageUrl!,
+        templateId: _selectedTemplateId!,
       );
 
-      print("Conceptual Navigation: To MemeDisplayScreen with template: $_selectedTemplateName, Image URL: $_selectedTemplateImageUrl, Top: $topText, Bottom: $bottomText, Template ID: $_selectedTemplateId");
-
-      // TODO: Step 5 - Uncomment and implement actual navigation to MemeDisplayScreen.
-      // Ensure MemeDisplayScreen is imported.
-      // Navigator.push(
-      //   context,
-      //   MaterialPageRoute(
-      //     builder: (context) => MemeDisplayScreen(
-      //       initialMemeData: MemeData(
-      //         topText: topText,
-      //         bottomText: bottomText,
-      //         imageUrl: _selectedTemplateImageUrl,
-      //         templateId: _selectedTemplateId,
-      //       ),
-      //     ),
-      //   ),
-      // );
+      if (mounted) {
+        navigator.push(
+          MaterialPageRoute(
+            builder: (context) => MemeDisplayScreen(
+              initialMemeData: memeDataForDisplay,
+            ),
+          ),
+        );
+      }
 
     } on FunctionsException catch (error) {
       print('Edge Function Exception: ${error.message}, Details: ${error.details}');
       if (mounted) {
+        setState(() => _isProcessing = false);
         scaffoldMessenger.removeCurrentSnackBar();
         scaffoldMessenger.showSnackBar(
-          SnackBar(backgroundColor: Colors.redAccent.shade700, content: Text('Error from suggestions: ${error.message}')),
+          SnackBar(backgroundColor: Colors.redAccent.shade700, content: Text('Suggestion Error: ${error.message}')),
         );
       }
     } catch (e) {
       print('Generic Error during meme processing: $e');
       if (mounted) {
+        setState(() => _isProcessing = false);
         scaffoldMessenger.removeCurrentSnackBar();
         scaffoldMessenger.showSnackBar(
           SnackBar(backgroundColor: Colors.redAccent.shade700, content: Text('An unexpected error occurred: ${e.toString()}')),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
       }
     }
   }
@@ -342,8 +331,8 @@ class _TextInputScreenState extends State<TextInputScreen> {
           SnackBar(
             content: Text('"${selectedTemplate.name}" selected.'),
             duration: const Duration(seconds: 2),
-            backgroundColor: Colors.green.shade700, // Success color
-            behavior: SnackBarBehavior.floating, // Consistent with theme if defined globally
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -362,6 +351,8 @@ class _TextInputScreenState extends State<TextInputScreen> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     const double previewAreaHeight = 180.0;
+
+    bool canProcessMeme = _selectedTemplateImageUrl != null && !_isProcessing;
 
     return Scaffold(
       appBar: AppBar(
@@ -439,7 +430,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
                             ),
                           ),
                           Text(
-                            "(Tap card to change)", // Refined hint
+                            "(Tap card to change)",
                             style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
                             textAlign: TextAlign.center,
                           )
@@ -451,7 +442,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
                                 Icon(Icons.photo_library_outlined, size: 60, color: Colors.grey[400]),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'No template selected.\nTap card to choose one.', // Refined instructive text
+                                  'No template selected.\nTap card to choose one.',
                                   textAlign: TextAlign.center,
                                   style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                                 ),
@@ -515,8 +506,13 @@ class _TextInputScreenState extends State<TextInputScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 12.0),
                         child: Text('Get Suggestions & Prepare', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       ),
-                      style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 4.0),
-                      onPressed: _processMeme,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: canProcessMeme ? colorScheme.primary : colorScheme.primary.withOpacity(0.5), // Dimmed when disabled due to no template
+                        foregroundColor: colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 4.0
+                      ),
+                      onPressed: canProcessMeme ? _processMeme : null, // Conditionally disable onPressed
                     ),
 
               if (_suggestionResults != null && !_isProcessing) ...[
