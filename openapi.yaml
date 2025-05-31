@@ -1,0 +1,906 @@
+openapi: 3.0.0
+info:
+  title: Meme App API (Unified)
+  version: v1
+  contact:
+    name: API Support
+    url: http://www.example.com/support
+    email: support@example.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  description: >
+    Unified API for the Meme Application, encompassing user authentication,
+    meme generation, template management, user meme saving, and browsing user meme history.
+
+    **API Conventions and Practices:**
+
+    *   **Authentication:**
+        Protected endpoints require Bearer Token authentication using a Firebase ID Token
+        provided by the client. The token should be included in the `Authorization`
+        header with the `Bearer` prefix. See the `securitySchemes` section for details.
+
+    *   **Error Handling:**
+        The API uses standard HTTP status codes to indicate the success or failure of a request.
+        Errors are returned in a consistent JSON format defined by the `ErrorResponse` schema.
+        Common HTTP status codes used:
+        *   `200 OK`: Request successful.
+        *   `201 Created`: Resource successfully created.
+        *   `400 Bad Request`: The request was malformed or contained invalid parameters
+            (e.g., missing required fields). Error code examples: `INVALID_INPUT`, `VALIDATION_ERROR`.
+        *   `401 Unauthorized`: Authentication failed or was not provided. Error code examples: `UNAUTHENTICATED`, `AUTH_INVALID_TOKEN`.
+        *   `403 Forbidden`: The authenticated user does not have permission to access the resource. Error code example: `FORBIDDEN`.
+        *   `404 Not Found`: The requested resource could not be found. Error code example: `RESOURCE_NOT_FOUND`, `USER_NOT_FOUND`.
+        *   `422 Unprocessable Content`: The request was well-formed but could not be processed
+            (e.g., semantic error in input, failure in an underlying service like NLP). Error code example: `GENERATION_FAILED`.
+        *   `429 Too Many Requests`: The client has sent too many requests in a given amount of time (rate limiting).
+        *   `500 Internal Server Error`: An unexpected error occurred on the server. Error code example: `INTERNAL_SERVER_ERROR`.
+        The `ErrorResponse` object's `error.code` field will contain a specific machine-readable code for the error type.
+
+    *   **Versioning:**
+        The API is versioned using a path prefix. The current version is `/v1/`. Future non-compatible
+        changes will be introduced under a new version prefix (e.g., `/v2/`).
+
+    *   **Data Formats:**
+        All request and response bodies are in `application/json` format.
+        Timestamps are returned in ISO 8601 format (e.g., `2023-10-27T10:00:00Z`) as specified by `format: date-time`.
+
+    *   **Rate Limiting:**
+        To protect the service from abuse and ensure availability, rate limiting may be applied to API requests.
+        If rate limits are exceeded, the API will respond with an HTTP `429 Too Many Requests` status code.
+        Clients should implement appropriate retry mechanisms with backoff.
+
+    *   **Idempotency:**
+        While this version of the API does not explicitly define mechanisms for idempotency keys for `POST` requests,
+        clients should be mindful of network issues and potential retries. `GET` operations are inherently idempotent.
+        Future updates might introduce idempotency keys for specific resource creation endpoints if deemed necessary.
+
+servers:
+  - url: /api/v1
+    description: Main API server V1
+
+paths:
+  /auth/verify_token:
+    post:
+      summary: Verify Firebase ID Token & Sync User
+      description: >
+        Verifies a Firebase ID token. If valid, the backend uses the decoded
+        token information (like UID) to identify the user. It can create a
+        user record in the backend's database if one doesn't exist for this
+        Firebase UID, or retrieve/update existing user data.
+        Called on app start or after client-side Firebase login/signup.
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Optional device information for user session tracking.
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthVerificationRequest'
+      responses:
+        '200':
+          description: Successfully verified token, user synced/retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthVerificationResponse'
+        '401':
+          description: Unauthorized - Token is invalid, expired, or not provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - Backend issue during token verification or database operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /memes/generate:
+    post:
+      summary: Generate a New Meme
+      description: >
+        Takes user text and optionally a template ID. The backend performs
+        semantic analysis, selects/generates an image/template, and returns
+        the resulting meme details.
+      tags:
+        - Memes
+      requestBody:
+        description: Text and preferences for meme generation.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemeGenerationRequest'
+      responses:
+        '200':
+          description: Meme generated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemeGenerationResponse'
+        '400':
+          description: Invalid input parameters (e.g., missing text).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Content - Input valid, but meme generation failed (e.g., NLP issue, no template).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - Unexpected error during meme generation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /templates:
+    get:
+      summary: List Available Meme Templates
+      description: >
+        Retrieves a paginated list of predefined meme templates available for selection.
+        Supports sorting, tag-based filtering, and free-text search.
+      tags:
+        - Templates
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of templates per page.
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sortBy
+          in: query
+          description: Sorting criteria for templates.
+          required: false
+          schema:
+            type: string
+            enum: [popular, newest, name]
+            default: popular
+        - name: tags
+          in: query
+          description: Comma-separated list of tags for filtering (e.g., "funny,animal").
+          required: false
+          schema:
+            type: string
+          example: "funny,animal"
+        - name: search
+          in: query
+          description: Search term to filter templates by name or keywords.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of meme templates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateListResponse'
+        '400':
+          description: Invalid query parameters (e.g., non-integer page).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - Unexpected error fetching templates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /memes:
+    post:
+      summary: Save a User's Meme
+      description: >
+        Saves a generated or custom meme to the user's account.
+        Requires user authentication.
+      tags:
+        - Memes
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Details of the meme to be saved.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemeSaveRequest'
+      responses:
+        '201':
+          description: Meme saved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedMemeResponse'
+        '400':
+          description: Invalid input (e.g., missing required fields).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - Failed to save meme.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/memes:
+    get:
+      summary: Get User's Saved Meme History
+      description: >
+        Retrieves a paginated list of memes saved by a specific user.
+        Requires authentication. Users can typically only access their own memes,
+        unless they have administrative privileges (enforced by backend).
+      tags:
+        - Users
+        - Memes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID of the user whose meme history is requested.
+          schema:
+            type: string
+            example: user_firebase_uid_or_backend_id
+        - name: page
+          in: query
+          description: Page number for pagination.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of memes per page.
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sortBy
+          in: query
+          description: Sorting criteria for the user's memes.
+          required: false
+          schema:
+            type: string
+            enum: [createdAt_asc, createdAt_desc, updatedAt_desc, popularity]
+            default: createdAt_desc
+        - name: visibility
+          in: query
+          description: Filter memes by visibility setting.
+          required: false
+          schema:
+            type: string
+            enum: [public, private, unlisted, all]
+            default: all
+      responses:
+        '200':
+          description: A paginated list of the user's saved memes.
+          content:
+            application/json:
+              schema:
+                type: object # Inline schema for UserMemeListResponse
+                properties:
+                  pagination:
+                    $ref: '#/components/schemas/PaginationInfo'
+                  memes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SavedMemeResponse'
+                    description: List of memes saved by the user.
+        '401':
+          description: Unauthorized - Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Not authorized to access this user's memes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found - The specified user ID does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error - Failed to fetch user's memes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Standard Bearer token authentication using a JWT.
+        For this application, it's typically a Firebase ID Token provided by the client.
+        The token should be included in the `Authorization` header with the `Bearer ` prefix.
+
+  schemas:
+    # --- Authentication Schemas ---
+    DeviceInfo:
+      type: object
+      description: Optional information about the client device making the request.
+      properties:
+        deviceId:
+          type: string
+          description: Unique identifier for the client device.
+          example: "unique_device_id_12345"
+        platform:
+          type: string
+          enum: [ios, android, web]
+          description: Operating system or platform of the client device.
+          example: ios
+        appVersion:
+          type: string
+          description: Version of the client application.
+          example: "1.0.2"
+
+    AuthVerificationRequest:
+      type: object
+      description: Request body for verifying Firebase ID token.
+      properties:
+        deviceInfo:
+          $ref: '#/components/schemas/DeviceInfo'
+
+    UserProfile:
+      type: object
+      description: Application-specific user profile data stored in the backend.
+      properties:
+        preferences:
+          type: object
+          description: User-defined preferences.
+          properties:
+            theme:
+              type: string
+              enum: [light, dark, system]
+              description: Preferred application theme.
+              example: dark
+            notificationsEnabled:
+              type: boolean
+              description: Whether user has enabled push notifications.
+              example: true
+          nullable: true
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: Timestamp of the user's last login, in ISO 8601 format.
+          example: "2023-10-27T10:00:00Z"
+        # Add other profile fields as needed, e.g., bio, avatarUrl (if managed by backend)
+
+    AuthVerificationResponse:
+      type: object
+      description: Response after successful Firebase ID token verification and user sync.
+      properties:
+        userId:
+          type: string
+          description: The user's unique ID in the backend system.
+          example: "backend_user_id_abc123"
+        firebaseUid:
+          type: string
+          description: The user's unique ID from Firebase Authentication.
+          example: "firebase_uid_xyz789"
+        email:
+          type: string
+          format: email
+          description: User's email address (from Firebase token).
+          example: user@example.com
+        displayName:
+          type: string
+          description: User's display name (from Firebase token or backend profile).
+          example: "User Name"
+          nullable: true
+        isNewUser:
+          type: boolean
+          description: True if a new user record was created in the backend during this request.
+          example: false
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+
+    # --- Meme Schemas ---
+    MemeText: # Reusable schema for text on a meme
+      type: object
+      description: Text content placed on a meme, typically top and/or bottom.
+      properties:
+        top:
+          type: string
+          description: Text displayed on the top part of the meme. Can be empty.
+          example: "When you define all schemas"
+        bottom:
+          type: string
+          description: Text displayed on the bottom part of the meme. Can be empty.
+          example: "And everything is consistent"
+      required:
+        - top
+        - bottom
+
+
+    MemeGenerationRequest:
+      type: object
+      description: Request to generate a new meme.
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: User's input phrase or primary text for the meme. Backend might split or use as is.
+          example: "User's input phrase for the meme"
+        userId:
+          type: string
+          description: Optional - User ID if generation is tied to a specific user account contextually. Often derived from auth token on backend.
+          example: "user_id_from_auth"
+          nullable: true
+        templateId:
+          type: string
+          description: Optional - ID of a predefined template if the user pre-selects one.
+          example: "template_id_123"
+          nullable: true
+        outputPreferences:
+          type: object
+          description: Optional - Client hints for desired output format and quality.
+          properties:
+            format:
+              type: string
+              enum: [url, base64_image]
+              default: url
+              description: Desired output format for the meme image.
+              example: url
+            resolution:
+              type: string
+              enum: [low, medium, high]
+              default: medium
+              description: Desired resolution for the generated meme image.
+              example: medium
+          nullable: true
+
+    MemeGenerationResponse:
+      type: object
+      description: Response containing the generated meme details.
+      properties:
+        meme:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: A unique ID for this generated meme instance (e.g., for caching or pre-save reference).
+              example: "meme_guid_abc789-1234-5678-bEEF-generated"
+            imageUrl:
+              type: string
+              format: url
+              description: URL of the generated meme image (if 'url' format was requested).
+              example: "https://cdn.example.com/memes/generated_meme.jpg"
+              nullable: true
+            imageData:
+              type: string
+              format: byte
+              description: Base64 encoded string of the meme image (if 'base64_image' format was requested).
+              example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQE..."
+              nullable: true
+            textUsed:
+              $ref: '#/components/schemas/MemeText'
+            templateUsed:
+              type: object
+              description: Details of the template that was ultimately used for generation.
+              properties:
+                id:
+                  type: string
+                  description: ID of the template used (could be AI selected or user provided).
+                  example: "template_id_xyz456"
+                name:
+                  type: string
+                  description: Name of the template used.
+                  example: "Drake Hotline Bling"
+              nullable: true
+            analysis:
+              type: object
+              description: Results of semantic analysis performed on the input text or generated meme.
+              properties:
+                tone:
+                  type: string
+                  description: Detected emotional tone of the text/meme.
+                  example: humorous
+                  nullable: true
+                keywords:
+                  type: array
+                  items:
+                    type: string
+                  description: Relevant keywords extracted from the text or related to the meme.
+                  example: ["funny", "reaction", "meme"]
+                  nullable: true
+                language:
+                  type: string
+                  description: Detected language of the input text (e.g., ISO 639-1 code).
+                  example: "en"
+                  nullable: true
+              nullable: true
+        metadata:
+          type: object
+          description: Metadata about the meme generation process.
+          properties:
+            generationTimeMs:
+              type: integer
+              format: int32
+              description: Time taken by the backend to generate the meme, in milliseconds.
+              example: 1250
+            backendVersion:
+              type: string
+              description: Version of the backend service that handled the request.
+              example: "1.2.1"
+
+    MemeSaveRequest:
+      type: object
+      description: Request to save a meme to a user's account.
+      required:
+        - imageUrl
+        - text
+        - isCustomImage
+      properties:
+        userId:
+          type: string
+          description: The ID of the user saving the meme. This is often derived from the authentication token on the backend and may not be required in the request body. If provided, it must match the authenticated user.
+          example: "user_id_from_auth"
+          nullable: true # Making it nullable as it might be purely derived from token
+        sourceMemeId:
+          type: string
+          format: uuid
+          description: Optional - ID from the generation step (MemeGenerationResponse.meme.id), if saving a freshly generated meme.
+          example: "meme_guid_abc789-1234-5678-bEEF-generated"
+          nullable: true
+        imageUrl:
+          type: string
+          format: url
+          description: >
+            URL of the final meme image. This could be an image URL from
+            the generation endpoint, or a URL from an image storage service (e.g., Firebase Storage)
+            if the client uploaded a custom image or an edited version.
+          example: "https://cdn.example.com/memes/user_saved_meme_final.jpg"
+        text:
+          $ref: '#/components/schemas/MemeText'
+        templateId:
+          type: string
+          description: Optional - ID of the predefined template used, if any.
+          example: "template_id_xyz456"
+          nullable: true
+        isCustomImage:
+          type: boolean
+          description: True if `imageUrl` points to a user-uploaded image or a heavily modified template, rather than a direct generation from a standard template.
+          example: false
+        customImageDetails:
+          type: object
+          description: Details about the custom image, if `isCustomImage` is true.
+          properties:
+            originalFilename:
+              type: string
+              description: Original filename of the user-uploaded image.
+              example: "my_holiday_photo.jpg"
+              nullable: true
+            uploadedAt:
+              type: string
+              format: date-time
+              description: Timestamp when the custom image was uploaded/processed by the client or a separate upload step, in ISO 8601 format.
+              example: "2023-10-27T14:30:00Z"
+              nullable: true
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          description: Optional - User-defined tags for organizing and searching their memes.
+          example: ["vacation", "funny", "cats"]
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private, unlisted]
+          default: private
+          description: Visibility setting for the saved meme.
+          example: private
+
+    SavedMemeResponse:
+      type: object
+      description: Represents a meme that has been saved by a user.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique ID for the saved meme resource in the backend.
+          example: "saved_meme_uuid_78910-ABCD-EFGH-IJKL-saved"
+        userId:
+          type: string
+          description: ID of the user who owns this meme.
+          example: "user_id_from_auth"
+        imageUrl:
+          type: string
+          format: url
+          description: URL where the meme image is stored and can be accessed.
+          example: "https://cdn.example.com/memes/user_saved_meme_final.jpg"
+        text:
+          $ref: '#/components/schemas/MemeText'
+        templateId:
+          type: string
+          description: ID of the predefined template used, if any.
+          example: "template_id_xyz456"
+          nullable: true
+        isCustomImage:
+          type: boolean
+          description: True if this meme was based on a user-uploaded image.
+          example: false
+        customImageDetails:
+          type: object
+          description: Details if it's a custom image.
+          properties:
+            originalFilename:
+              type: string
+              example: "my_holiday_photo.jpg"
+              nullable: true
+            uploadedAt:
+              type: string
+              format: date-time
+              description: Timestamp when the custom image was originally processed/uploaded, in ISO 8601 format.
+              example: "2023-10-27T14:30:00Z"
+              nullable: true
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          description: User-defined tags associated with the meme.
+          example: ["vacation", "funny", "cats"]
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private, unlisted]
+          description: Visibility setting of the meme.
+          example: private
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the meme was saved, in ISO 8601 format.
+          example: "2023-10-27T15:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the meme was last updated, in ISO 8601 format.
+          example: "2023-10-27T15:00:00Z"
+        accessUrl:
+          type: string
+          format: uri
+          description: A direct URL or path to access or share this specific meme.
+          example: "/memes/view/saved_meme_uuid_78910"
+          nullable: true
+
+    # --- Template Schemas ---
+    TextAreaDefinition:
+      type: object
+      description: Defines an area on a meme template where text can be placed.
+      properties:
+        id:
+          type: string
+          description: A unique identifier for this text area within the template (e.g., "top", "bottom", "caption_1").
+          example: "top_text_area"
+        label:
+          type: string
+          description: A human-readable label for this text area, useful for UI hints.
+          example: "Top Text"
+        defaultText:
+          type: string
+          description: Optional default or placeholder text for this area.
+          example: "Enter top text here"
+          nullable: true
+
+    Template:
+      type: object
+      description: Represents a predefined meme template.
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the meme template.
+          example: "template_id_001_drake"
+        name:
+          type: string
+          description: Human-readable name of the template.
+          example: "Distracted Boyfriend"
+        thumbnailUrl:
+          type: string
+          format: url
+          description: URL for a small thumbnail image of the template.
+          example: "https://cdn.example.com/templates/thumbnails/distracted_boyfriend.jpg"
+        previewUrl:
+          type: string
+          format: url
+          description: URL for a larger preview image of the template.
+          example: "https://cdn.example.com/templates/previews/distracted_boyfriend.png"
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags associated with the template for categorization and searching.
+          example: ["funny", "relationship", "jealousy", "popular"]
+        textAreas:
+          type: array
+          items:
+            $ref: '#/components/schemas/TextAreaDefinition'
+          description: Defines the editable text areas available on this template.
+        popularityScore:
+          type: integer
+          description: A score indicating the template's popularity (higher is more popular).
+          example: 950
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the template was created or added to the system, in ISO 8601 format.
+          example: "2023-01-15T10:00:00Z"
+        category:
+          type: string
+          description: Category of the meme template (e.g., Reaction, Animal, Classic).
+          example: "Reaction"
+          nullable: true
+        usageCount:
+          type: integer
+          format: int64
+          description: Approximate number of times this template has been used to generate memes.
+          example: 10500
+          nullable: true
+
+    TemplateListResponse:
+      type: object
+      description: Response containing a list of meme templates and pagination info.
+      properties:
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Template'
+          description: The list of meme templates for the current page.
+
+    # --- Common/Utility Schemas ---
+    PaginationInfo:
+      type: object
+      description: Information about pagination for a list of items.
+      properties:
+        currentPage:
+          type: integer
+          format: int32
+          description: The current page number (1-indexed).
+          example: 1
+        totalPages:
+          type: integer
+          format: int32
+          description: The total number of pages available.
+          example: 5
+        totalItems:
+          type: integer
+          format: int64
+          description: The total number of items available across all pages.
+          example: 98
+        limit:
+          type: integer
+          format: int32
+          description: The number of items requested per page (as specified in the request).
+          example: 20
+        prevPage:
+          type: integer
+          format: int32
+          description: The previous page number, if available (null if current page is the first).
+          example: 1
+          nullable: true
+        nextPage:
+          type: integer
+          format: int32
+          description: The next page number, if available (null if current page is the last).
+          example: 2
+          nullable: true
+
+    ErrorDetail:
+      type: object
+      description: Provides details about a specific error, often related to a single field.
+      properties:
+        field:
+          type: string
+          description: The field that caused the error, if applicable (e.g., "email", "password"). Can use dot notation for nested fields (e.g. "meme.text.top").
+          example: "text"
+          nullable: true
+        issue:
+          type: string
+          description: A short description of the issue with the field.
+          example: "Cannot be empty"
+        value:
+          type: string
+          description: The value that caused the error (use with caution for sensitive data).
+          example: ""
+          nullable: true
+        location:
+          type: string
+          enum: [body, query, path, header]
+          description: The location of the parameter that caused the error.
+          example: body
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      description: Generic error response structure used for all API errors.
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: A machine-readable error code specific to this error type (e.g., INVALID_INPUT, UNAUTHENTICATED, FORBIDDEN, RESOURCE_NOT_FOUND, INTERNAL_SERVER_ERROR).
+              example: "INVALID_INPUT"
+            message:
+              type: string
+              description: A human-readable message providing more details about the error.
+              example: "Required field 'text' is missing or invalid."
+            target:
+              type: string
+              description: Indicates the specific target or source of the error, if applicable (e.g., a field name or a service).
+              example: "MemeGenerationRequest.text"
+              nullable: true
+            details:
+              type: array
+              items:
+                $ref: '#/components/schemas/ErrorDetail'
+              description: Optional - An array of more specific error details, e.g., for field validation errors.
+              nullable: true
+            traceId:
+              type: string
+              format: uuid
+              description: A unique identifier for this error instance, useful for logging, debugging, and support.
+              example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+              nullable: true
+tags:
+  - name: Authentication
+    description: User authentication and profile management operations.
+  - name: Memes
+    description: Operations related to meme generation, saving, and retrieval.
+  - name: Templates
+    description: Operations for listing and managing meme templates.
+  - name: Users
+    description: User-specific operations, including retrieving user data and meme history.

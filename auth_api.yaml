@@ -1,0 +1,126 @@
+openapi: 3.0.0
+info:
+  title: User Authentication API
+  version: v1
+  description: API for user authentication using Firebase ID tokens.
+
+servers:
+  - url: /api/v1
+
+paths:
+  /auth/verify_token:
+    post:
+      summary: Verify Firebase ID Token
+      description: >
+        Verifies the Firebase ID token. If valid, the backend can use the
+        decoded token information (like UID) to identify the user. It can also
+        be used to create a user record in the backend's database if one
+        doesn't exist for this Firebase UID, or to retrieve existing user data.
+        This is often called when the app starts or after login/signup via
+        Firebase on the client.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceInfo:
+                  type: object
+                  description: Optional information about the client device
+                  properties:
+                    deviceId:
+                      type: string
+                      example: unique_device_id
+                    platform:
+                      type: string
+                      enum: [ios, android]
+                      example: ios
+                    appVersion:
+                      type: string
+                      example: "1.0.0"
+      responses:
+        '200':
+          description: Successful token verification and user sync/retrieval.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    description: The user's ID in your backend system
+                    example: backend_user_id
+                  firebaseUid:
+                    type: string
+                    description: Firebase user UID
+                    example: firebase_user_uid
+                  email:
+                    type: string
+                    format: email
+                    example: user@example.com
+                  displayName:
+                    type: string
+                    description: From Firebase token or your backend profile
+                    example: User Name
+                  isNewUser:
+                    type: boolean
+                    description: Indicates if a new user record was created in the backend
+                    example: false
+                  profile:
+                    type: object
+                    description: Application-specific user profile data
+                    properties:
+                      preferences:
+                        type: object
+                        properties:
+                          theme:
+                            type: string
+                            example: dark
+                      lastLoginAt:
+                        type: string
+                        format: date-time
+                        example: "2023-10-27T10:00:00Z"
+        '401':
+          description: Token is invalid, expired, or not provided.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        example: AUTH_INVALID_TOKEN
+                      message:
+                        type: string
+                        example: Firebase ID token is invalid or expired.
+        '500':
+          description: Backend issue during token verification or database operation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        example: INTERNAL_SERVER_ERROR
+                      message:
+                        type: string
+                        example: An unexpected error occurred on the server.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # Firebase ID tokens are JWTs
+      description: Firebase ID Token for authentication.
+                  The token should be prefixed with 'Bearer '.
