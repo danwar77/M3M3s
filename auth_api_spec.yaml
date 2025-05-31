@@ -1,0 +1,213 @@
+openapi: 3.0.0
+info:
+  title: User Authentication API
+  version: v1
+  description: API endpoints for user authentication and profile synchronization using Firebase ID tokens.
+
+servers:
+  - url: http://localhost:8000/api/v1 # Replace with your actual server URL
+
+components:
+  schemas:
+    DeviceInfo:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: Unique identifier for the client device.
+          example: "unique_device_id_123"
+        platform:
+          type: string
+          enum: [ios, android, web]
+          description: Client platform.
+          example: "ios"
+        appVersion:
+          type: string
+          description: Version of the client application.
+          example: "1.0.1"
+
+    UserProfile:
+      type: object
+      properties:
+        preferences:
+          type: object
+          properties:
+            theme:
+              type: string
+              example: "dark"
+          description: User-specific application preferences.
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: Timestamp of the user's last login.
+          example: "2023-10-27T10:00:00Z"
+      description: Application-specific user profile data stored in the backend.
+
+    AuthVerificationRequest:
+      type: object
+      properties:
+        deviceInfo:
+          $ref: '#/components/schemas/DeviceInfo'
+          description: Optional information about the client device.
+      # No required properties, body can be empty or contain deviceInfo
+
+    AuthVerificationResponse:
+      type: object
+      required:
+        - userId
+        - firebaseUid
+        - email
+        - isNewUser
+      properties:
+        userId:
+          type: string
+          description: The user's ID in the backend system.
+          example: "backend_user_abc123"
+        firebaseUid:
+          type: string
+          description: Firebase User ID (UID).
+          example: "firebase_user_xyz789"
+        email:
+          type: string
+          format: email
+          description: User's email address.
+          example: "user@example.com"
+        displayName:
+          type: string
+          nullable: true
+          description: User's display name from Firebase token or backend profile.
+          example: "User Name"
+        isNewUser:
+          type: boolean
+          description: Indicates if a new user record was created in the backend.
+          example: false
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+          nullable: true
+          description: Application-specific user profile data.
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: A short error code.
+              example: "AUTH_INVALID_TOKEN"
+            message:
+              type: string
+              description: A human-readable error message.
+              example: "Firebase ID token is invalid or expired."
+
+  securitySchemes:
+    FirebaseBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: FirebaseIdToken # Custom description, not a standard field but useful for docs
+      description: Bearer token containing the Firebase ID token.
+
+paths:
+  /auth/verify_token:
+    post:
+      summary: Verify Firebase ID Token & Sync User
+      description: |
+        Verifies the Firebase ID token. If valid, the backend uses the decoded token
+        information (like UID) to identify the user. It can also be used to create a
+        user record in the backend's database if one doesn't exist for this Firebase UID,
+        or to retrieve existing user data. This is often called when the app starts or
+        after login/signup via Firebase on the client.
+      tags:
+        - Authentication
+      security:
+        - FirebaseBearerAuth: []
+      requestBody:
+        description: Optional. Could include initial user preferences/info if creating a new profile, or device information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthVerificationRequest'
+        # Not strictly required by the prompt, but good practice to note if it can be empty
+        # required: false
+      responses:
+        '200':
+          description: Successful token verification and user sync/retrieval.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthVerificationResponse'
+        '401':
+          description: Unauthorized. Token is invalid, expired, or not provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  error:
+                    code: "AUTH_INVALID_TOKEN"
+                    message: "Firebase ID token is invalid or expired."
+        '500':
+          description: Internal Server Error. Backend issue during token verification or database operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  error:
+                    code: "INTERNAL_SERVER_ERROR"
+                    message: "An unexpected error occurred on the server."
+
+  # Alternative endpoint mentioned in the prompt
+  /users/me/sync:
+    post:
+      summary: Sync User Profile (Alternative to verify_token)
+      description: |
+        Alternative endpoint for verifying Firebase ID token and syncing user data.
+        Functionally similar to /auth/verify_token.
+      tags:
+        - User Management
+      security:
+        - FirebaseBearerAuth: []
+      requestBody:
+        description: Optional. Could include initial user preferences/info if creating a new profile, or device information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthVerificationRequest'
+      responses:
+        '200':
+          description: Successful token verification and user sync/retrieval.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthVerificationResponse'
+        '401':
+          description: Unauthorized. Token is invalid, expired, or not provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                examples:
+                  invalidToken:
+                    value:
+                      error:
+                        code: "AUTH_INVALID_TOKEN"
+                        message: "Firebase ID token is invalid or expired."
+        '500':
+          description: Internal Server Error. Backend issue during token verification or database operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                examples:
+                  serverError:
+                    value:
+                      error:
+                        code: "INTERNAL_SERVER_ERROR"
+                        message: "An unexpected error occurred on the server."
