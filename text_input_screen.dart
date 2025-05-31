@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'template_list_item.dart'; // Import TemplateListItem and TemplateInfo
 
 // Data class for passing data to MemeDisplayScreen.
-// Ensure this is defined or import it if it's in another file (e.g., meme_display_screen.dart)
 class MemeData {
   final String? topText;
   final String? bottomText;
   final String? imageUrl;
-  final String? templateId; // Added to pass along the template ID
+  final String? templateId;
 
   MemeData({
     this.topText,
@@ -33,9 +33,16 @@ class _TextInputScreenState extends State<TextInputScreen> {
   String? _selectedTemplateName;
   String? _selectedTemplateImageUrl;
 
-  bool _isProcessing = false; // Renamed from _isGenerating for clarity
-
+  bool _isProcessing = false;
   Map<String, dynamic>? _suggestionResults;
+
+  late Future<List<TemplateInfo>> _templatesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _templatesFuture = _fetchTemplates();
+  }
 
   @override
   void dispose() {
@@ -44,7 +51,54 @@ class _TextInputScreenState extends State<TextInputScreen> {
     super.dispose();
   }
 
-  Future<void> _processMeme() async { // Renamed for clarity
+  Future<List<TemplateInfo>> _fetchTemplates() async {
+    if (!mounted) return [];
+    print("Fetching templates from Supabase...");
+    // Simulate network delay for testing loading indicator
+    // await Future.delayed(const Duration(seconds: 2));
+    try {
+      final response = await Supabase.instance.client
+          .from('templates')
+          .select('id, name, image_url, thumbnail_url, tags')
+          .order('name', ascending: true)
+          .limit(50);
+
+      final List<dynamic> data = response;
+
+      print("Templates fetched: ${data.length}");
+      return data.map((item) => TemplateInfo.fromMap(item as Map<String, dynamic>)).toList();
+
+    } on PostgrestException catch (error) {
+      print('Supabase fetch templates error: ${error.message}');
+      // SnackBar is shown by the FutureBuilder's error state, but good to log.
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(content: Text('Failed to fetch templates: ${error.message}'), backgroundColor: Colors.redAccent.shade700),
+      //   );
+      // }
+      throw 'Failed to fetch templates: ${error.message}';
+    } catch (e) {
+      print('Generic fetch templates error: $e');
+      //  if (mounted) {
+      //   ScaffoldMessenger.of(context).removeCurrentSnackBar();
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(content: Text('An unexpected error occurred: $e'), backgroundColor: Colors.redAccent.shade700),
+      //   );
+      // }
+      throw 'An unexpected error occurred while fetching templates: $e';
+    }
+  }
+
+  void _retryFetchTemplates() {
+    if (mounted) {
+      setState(() {
+        _templatesFuture = _fetchTemplates();
+      });
+    }
+  }
+
+  Future<void> _processMeme() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) {
       return;
@@ -54,7 +108,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select a template first.'),
+          content: const Text('Please select a template first!'),
           backgroundColor: Colors.orangeAccent.shade700,
         ),
       );
@@ -105,17 +159,10 @@ class _TextInputScreenState extends State<TextInputScreen> {
         ),
       );
 
-      // Decide which template to use for navigation: user's explicit selection takes precedence.
-      final String finalTemplateIdForDisplay = _selectedTemplateId!;
-      final String finalTemplateImageUrlForDisplay = _selectedTemplateImageUrl!;
-      final String finalTemplateName = _selectedTemplateName!; // For clarity if needed
+      print("Conceptual Navigation: To MemeDisplayScreen with template: $_selectedTemplateName, Image URL: $_selectedTemplateImageUrl, Top: $topText, Bottom: $bottomText, Template ID: $_selectedTemplateId");
 
-      // If suggestions are meant to allow user to CHANGE template, add UI for that here.
-      // For now, we proceed with the user's chosen template and display suggestions as info.
-
-      print("Proceeding to display/edit with: Top: \"$topText\", Bottom: \"$bottomText\", Image URL: $finalTemplateImageUrlForDisplay, Template ID: $finalTemplateIdForDisplay");
-
-      // TODO: Navigate to MemeDisplayScreen. Ensure MemeDisplayScreen is imported.
+      // TODO: Step 5 - Uncomment and implement actual navigation to MemeDisplayScreen.
+      // Ensure MemeDisplayScreen is imported.
       // Navigator.push(
       //   context,
       //   MaterialPageRoute(
@@ -123,8 +170,8 @@ class _TextInputScreenState extends State<TextInputScreen> {
       //       initialMemeData: MemeData(
       //         topText: topText,
       //         bottomText: bottomText,
-      //         imageUrl: finalTemplateImageUrlForDisplay,
-      //         templateId: finalTemplateIdForDisplay, // Pass the template ID
+      //         imageUrl: _selectedTemplateImageUrl,
+      //         templateId: _selectedTemplateId,
       //       ),
       //     ),
       //   ),
@@ -153,85 +200,160 @@ class _TextInputScreenState extends State<TextInputScreen> {
     }
   }
 
-  void _selectTemplate() async {
+  void _selectTemplate() {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    // TODO: Replace with actual call to fetch templates from Supabase DB.
-    // Example:
-    // final response = await Supabase.instance.client.from('templates').select('id, name, image_url').limit(20);
-    // final List<Map<String, dynamic>> templatesFromDb = (response as List<dynamic>).cast<Map<String, dynamic>>();
 
-    final mockTemplates = [
-      {'id': 'tpl_drake_001', 'name': 'Drake Hotline Bling', 'image_url': 'https://i.imgflip.com/ drake.jpg'}, // Example with a broken URL for testing errorBuilder
-      {'id': 'tpl_distracted_002', 'name': 'Distracted Boyfriend', 'image_url': 'https://i.imgflip.com/2/1ur9b0.jpg'},
-      {'id': 'tpl_boromir_003', 'name': 'One Does Not Simply', 'image_url': 'https://i.imgflip.com/1bij.jpg'},
-      {'id': 'tpl_success_kid_004', 'name': 'Success Kid', 'image_url': 'https://i.imgflip.com/q2j.jpg'},
-    ];
-
-    if (!mounted) return;
-
-    final selected = await showModalBottomSheet<Map<String, dynamic>>(
+    showModalBottomSheet<TemplateInfo>(
       context: context,
-      isScrollControlled: true, // Allow sheet to take more height
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext bc) {
         return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
           expand: false,
-          initialChildSize: 0.6, // Start at 60% of screen height
-          maxChildSize: 0.9,   // Max 90%
-          minChildSize: 0.3,   // Min 30%
-          builder: (BuildContext context, ScrollController scrollController) {
-            return Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0, bottom:8.0),
-                  child: Text('Select a Template', style: Theme.of(context).textTheme.titleLarge),
+          builder: (_, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).canvasColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16.0),
+                  topRight: Radius.circular(16.0),
                 ),
-                const Divider(),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController, // Use the controller from DraggableScrollableSheet
-                    itemCount: mockTemplates.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final tpl = mockTemplates[index];
-                      return ListTile(
-                        leading: Image.network(
-                          tpl['image_url']!,
-                          width: 60, height: 60, fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Container(width:60, height:60, color: Colors.grey[200], child: const Icon(Icons.broken_image_outlined, size: 30, color: Colors.grey)),
-                          loadingBuilder: (c, child, progress) => progress == null ? child : Container(width:60, height:60, child: const Center(child: SizedBox(width:20, height:20, child:CircularProgressIndicator(strokeWidth: 2.0)))),
-                        ),
-                        title: Text(tpl['name']!),
-                        onTap: () => Navigator.pop(context, tpl),
-                      );
-                    },
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10))),
                   ),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 10.0),
+                    child: Text("Select a Template", style: Theme.of(context).textTheme.titleLarge),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: FutureBuilder<List<TemplateInfo>>(
+                      future: _templatesFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text("Loading templates..."),
+                              ],
+                            )
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.error_outline_rounded, color: Theme.of(context).colorScheme.error, size: 40),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    "Oops! Couldn't load templates.\nPlease check your connection and try again.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Theme.of(context).colorScheme.error)
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.refresh_rounded),
+                                    label: const Text('Retry'),
+                                    onPressed: _retryFetchTemplates,
+                                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.errorContainer, foregroundColor: Theme.of(context).colorScheme.onErrorContainer),
+                                  )
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.collections_bookmark_outlined, color: Colors.grey[600], size: 40),
+                                  const SizedBox(height: 10),
+                                  const Text('No templates found.\nTry refreshing or check back later!'),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.refresh_rounded),
+                                    label: const Text('Refresh'),
+                                    onPressed: _retryFetchTemplates,
+                                  )
+                                ],
+                              ),
+                            )
+                          );
+                        }
+
+                        final List<TemplateInfo> templates = snapshot.data!;
+                        final crossAxisCount = MediaQuery.of(context).size.width > 600 ? 4 : 3;
+
+                        return GridView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(8.0),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 8.0,
+                            mainAxisSpacing: 8.0,
+                            childAspectRatio: 0.85,
+                          ),
+                          itemCount: templates.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final tpl = templates[index];
+                            return TemplateListItem(
+                              template: tpl,
+                              onTap: () {
+                                Navigator.pop(context, tpl);
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         );
       },
-    );
-
-    if (selected != null && mounted) {
-      setState(() {
-        _selectedTemplateId = selected['id'];
-        _selectedTemplateName = selected['name'];
-        _selectedTemplateImageUrl = selected['image_url'];
-        _suggestionResults = null;
-      });
-      scaffoldMessenger.removeCurrentSnackBar();
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('Template selected: ${_selectedTemplateName!}')),
-      );
-    }
+    ).then((selectedTemplate) {
+      if (selectedTemplate != null && mounted) {
+        setState(() {
+          _selectedTemplateId = selectedTemplate.id;
+          _selectedTemplateName = selectedTemplate.name;
+          _selectedTemplateImageUrl = selectedTemplate.imageUrl;
+          _suggestionResults = null;
+        });
+        scaffoldMessenger.removeCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('"${selectedTemplate.name}" selected.'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green.shade700, // Success color
+            behavior: SnackBarBehavior.floating, // Consistent with theme if defined globally
+          ),
+        );
+      }
+    });
   }
 
   void _uploadImage() {
-    // TODO: Implement image uploading logic (e.g., using image_picker).
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: const Text('Upload image: Feature to be implemented.'), backgroundColor: Colors.blueGrey),
+      SnackBar(content: const Text('Upload image: Feature to be implemented.'), backgroundColor: Colors.blueGrey.shade700),
     );
   }
 
@@ -239,6 +361,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    const double previewAreaHeight = 180.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -258,51 +381,106 @@ class _TextInputScreenState extends State<TextInputScreen> {
                 elevation: 2,
                 color: colorScheme.surface,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      if (_selectedTemplateImageUrl != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: Image.network(
-                            _selectedTemplateImageUrl!,
-                            height: 150, // Increased preview size
-                            fit: BoxFit.contain,
-                            errorBuilder: (c,e,s) => Container(height:150, decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)), child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children:[Icon(Icons.error_outline, color: Colors.red.shade300, size: 30), SizedBox(height:4), Text("Preview Error", style: TextStyle(color: Colors.red.shade300))]))),
-                            loadingBuilder: (c, child, progress) => progress == null ? child : Container(height:150, child: const Center(child: CircularProgressIndicator())),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: _selectTemplate,
+                  child: Container(
+                    height: previewAreaHeight,
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_selectedTemplateImageUrl != null) ...[
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.network(
+                                _selectedTemplateImageUrl!,
+                                fit: BoxFit.contain,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return SizedBox(
+                                    height: 100,
+                                    width: 100,
+                                    child: Center(child: CircularProgressIndicator(
+                                      strokeWidth: 2.0,
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                          : null,
+                                    )),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return SizedBox(
+                                    height: 100,
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.error_outline_rounded, color: theme.colorScheme.error, size: 40),
+                                          const SizedBox(height: 4),
+                                          Text("Preview Error", style: TextStyle(color: theme.colorScheme.error, fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
-                        ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12.0),
-                        child: Text(
-                          _selectedTemplateId != null
-                              ? 'Selected: ${_selectedTemplateName ?? _selectedTemplateId}'
-                              : 'No template selected yet.',
-                          style: theme.textTheme.titleSmall?.copyWith(color: _selectedTemplateId != null ? colorScheme.onSurfaceVariant : Colors.grey[700], fontStyle: _selectedTemplateId == null ? FontStyle.italic: FontStyle.normal),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          TextButton.icon( // Changed to TextButton for less emphasis than primary action
-                            icon: const Icon(Icons.photo_library_outlined, size: 20),
-                            label: const Text('Choose Template'),
-                            onPressed: _selectTemplate,
-                            style: TextButton.styleFrom(foregroundColor: colorScheme.secondary),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              'Selected: ${_selectedTemplateName ?? _selectedTemplateId!}',
+                              style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          TextButton.icon(
-                            icon: const Icon(Icons.upload_file_outlined, size: 20),
-                            label: const Text('Upload Custom'),
-                            onPressed: _uploadImage,
-                            style: TextButton.styleFrom(foregroundColor: colorScheme.secondary),
+                          Text(
+                            "(Tap card to change)", // Refined hint
+                            style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
+                            textAlign: TextAlign.center,
+                          )
+                        ] else ...[
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.photo_library_outlined, size: 60, color: Colors.grey[400]),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No template selected.\nTap card to choose one.', // Refined instructive text
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ],
+                        ]
+                      ],
+                    ),
                   ),
                 ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton.icon(
+                    icon: const Icon(Icons.photo_library_outlined, size: 20),
+                    label: const Text('Choose Template'),
+                    onPressed: _selectTemplate,
+                    style: TextButton.styleFrom(foregroundColor: colorScheme.secondary),
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.upload_file_outlined, size: 20),
+                    label: const Text('Upload Custom'),
+                    onPressed: _uploadImage,
+                    style: TextButton.styleFrom(foregroundColor: colorScheme.secondary),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               const Divider(height: 1, thickness: 0.5),
@@ -329,17 +507,16 @@ class _TextInputScreenState extends State<TextInputScreen> {
               ),
               const SizedBox(height: 32),
 
-              _isProcessing // Renamed from _isGenerating
+              _isProcessing
                   ? const Center(child: Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator()))
                   : ElevatedButton.icon(
                       icon: const Icon(Icons.auto_awesome_outlined, size: 28),
                       label: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12.0),
-                        // Clarified button text
                         child: Text('Get Suggestions & Prepare', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       ),
                       style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: colorScheme.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 4.0),
-                      onPressed: _processMeme, // Renamed method
+                      onPressed: _processMeme,
                     ),
 
               if (_suggestionResults != null && !_isProcessing) ...[
@@ -365,26 +542,19 @@ class _TextInputScreenState extends State<TextInputScreen> {
                           spacing: 6.0,
                           runSpacing: 0.0,
                           children: ((_suggestionResults!['analyzedText']?['keywords'] as List<dynamic>?)?.cast<String>() ?? [])
-                              .map((keyword) => Chip(label: Text(keyword), padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0)))
+                              .map((keyword) => Chip(label: Text(keyword), padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0)))
                               .toList(),
                         ),
                         if ((_suggestionResults!['suggestedTemplates'] as List<dynamic>?)?.isNotEmpty ?? false) ...[
                           const SizedBox(height: 12),
                           Text('Top Suggested Template:', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
                           Text('${_suggestionResults!['suggestedTemplates'][0]['name']} (ID: ${_suggestionResults!['suggestedTemplates'][0]['templateId']})', style: theme.textTheme.bodyLarge),
-                          const SizedBox(height: 8),
-                          // TODO: Add a button like "Use this suggested template" which would call _selectTemplate with its data.
-                          // TextButton(onPressed: () { /* use suggestion */ }, child: Text("Use this suggestion?"))
                         ]
                       ],
                     ),
                   ),
                 ),
                  const SizedBox(height: 16),
-                 // TODO: Add a clearer "Next Step" button here like "Proceed to Edit/Display Screen"
-                 // This button would use the _selectedTemplateImageUrl and input texts to navigate.
-                 // For now, the user has to tap "Get Suggestions & Prepare" again if they change text
-                 // after selecting a template and getting suggestions.
               ],
               const SizedBox(height: 20),
             ],
