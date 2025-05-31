@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'dart:io'; // For File type
 import 'dart:typed_data'; // For Uint8List
 import 'dart:ui' as ui; // For ui.Image
@@ -39,6 +40,11 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   final GlobalKey _memeBoundaryKey = GlobalKey();
   bool _isSaving = false;
   bool _isSharing = false;
+
+  // New state variables for Text Stroke/Outline
+  bool _isTextStrokeEnabled = true; // Default to enabled
+  Color _textStrokeColor = Colors.black; // Default stroke color
+  double _textStrokeWidth = 2.0; // Default stroke width
 
   @override
   void initState() {
@@ -203,29 +209,353 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
 
   Widget _buildMemePreview(BuildContext context) {
     // ... (implementation as previously defined)
-    final ThemeData theme = Theme.of(context);
+    final theme = Theme.of(context);
     Widget imageWidget;
+
+    // Image loading logic (remains the same)
     if (widget.initialMemeData.localImageFile != null) {
-      imageWidget = Image.file(widget.initialMemeData.localImageFile!, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) { return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.broken_image_outlined, size: 50, color: Colors.redAccent.shade400), const SizedBox(height: 8), const Text("Error loading local image.", style: TextStyle(color: Colors.redAccent))]));});
+      imageWidget = Image.file(
+        widget.initialMemeData.localImageFile!,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          print("Error loading local file: $error");
+          return const Center(child: Icon(Icons.broken_image_outlined, size: 50, color: Colors.redAccent));
+        },
+      );
     } else if (widget.initialMemeData.imageUrl != null) {
-      imageWidget = Image.network(widget.initialMemeData.imageUrl!, fit: BoxFit.contain, loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) { if (loadingProgress == null) return child; return Center(child: CircularProgressIndicator(strokeWidth: 2.0, value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null));}, errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) { return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.signal_wifi_off_outlined, size: 50, color: Colors.orangeAccent.shade400), const SizedBox(height: 8), const Text("Error loading template image.", style: TextStyle(color: Colors.orangeAccent))]));});
+      imageWidget = Image.network(
+        widget.initialMemeData.imageUrl!,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator(strokeWidth: 2.0));
+        },
+        errorBuilder: (context, error, stackTrace) {
+          print("Error loading network image: $error");
+          return const Center(child: Icon(Icons.signal_wifi_off_outlined, size: 50, color: Colors.orangeAccent));
+        },
+      );
     } else {
-      imageWidget = Container(color: Colors.grey[300], child: const Center(child: Text('Error: No valid image source provided!', style: TextStyle(color: Colors.red))));
+      imageWidget = Container(
+        color: Colors.grey[300],
+        child: const Center(child: Text('Error: No image source provided!')),
+      );
     }
-    final TextStyle memeTextStyle = TextStyle(fontFamily: _fontFamily, fontSize: _fontSize, color: _textColor, fontWeight: FontWeight.w900, shadows: const <Shadow>[Shadow(offset: Offset(-2.0, -2.0), color: Colors.black), Shadow(offset: Offset(2.0, -2.0), color: Colors.black), Shadow(offset: Offset(2.0, 2.0), color: Colors.black), Shadow(offset: Offset(-2.0, 2.0), color: Colors.black), Shadow(offset: Offset(-1.0, -1.0), color: Colors.black), Shadow(offset: Offset(1.0, -1.0), color: Colors.black), Shadow(offset: Offset(1.0, 1.0), color: Colors.black), Shadow(offset: Offset(-1.0, 1.0), color: Colors.black)]);
-    return RepaintBoundary(key: _memeBoundaryKey, child: AspectRatio(aspectRatio: 4 / 3, child: Container(decoration: BoxDecoration(border: Border.all(color: theme.dividerColor, width: 0.5), color: Colors.grey[800]), child: Stack(alignment: Alignment.center, children: <Widget>[Center(child: imageWidget), Positioned(top: 15, left: 15, right: 15, child: Text(_topTextController.text.toUpperCase(), textAlign: TextAlign.center, style: memeTextStyle, maxLines: 3, overflow: TextOverflow.ellipsis)), Positioned(bottom: 15, left: 15, right: 15, child: Text(_bottomTextController.text.toUpperCase(), textAlign: TextAlign.center, style: memeTextStyle, maxLines: 3, overflow: TextOverflow.ellipsis))]))));
+
+    // Helper function to build a single text element (either top or bottom)
+    Widget _buildTextElement(String text, {required bool isTopText}) {
+      // Fill text style
+      TextStyle fillTextStyle = TextStyle(
+        fontFamily: _fontFamily,
+        fontSize: _fontSize,
+        color: _textColor, // User-selected fill color
+        fontWeight: FontWeight.bold, // Common for meme text
+      );
+
+      if (!_isTextStrokeEnabled || _textStrokeWidth <= 0) {
+        // If stroke is disabled or width is zero, just render the fill text
+        // Optionally, add back the old shadow effect here if desired as a fallback
+        if (!_isTextStrokeEnabled && _textStrokeWidth <=0) { // Only add shadows if stroke is explicitly off
+            fillTextStyle = fillTextStyle.copyWith(
+              shadows: const <Shadow>[ // Basic text outline for when stroke is off
+                  Shadow(offset: Offset(-1.5, -1.5), color: Colors.black54),
+                  Shadow(offset: Offset(1.5, -1.5), color: Colors.black54),
+                  Shadow(offset: Offset(1.5, 1.5), color: Colors.black54),
+                  Shadow(offset: Offset(-1.5, 1.5), color: Colors.black54),
+              ]
+            );
+        }
+        return Text(
+          text.toUpperCase(),
+          textAlign: TextAlign.center,
+          style: fillTextStyle,
+          overflow: TextOverflow.visible, // Changed from ellipsis to allow larger stroke to be visible
+        );
+      }
+
+      // Stroke text style
+      TextStyle strokeTextStyle = TextStyle(
+        fontFamily: _fontFamily,
+        fontSize: _fontSize,
+        fontWeight: FontWeight.bold, // Match fill's weight for consistent glyph shape
+        foreground: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _textStrokeWidth
+          ..color = _textStrokeColor // User-selected stroke color
+          ..strokeJoin = StrokeJoin.round // Common for better looking corners
+          ..strokeCap = StrokeCap.round,
+      );
+
+      return Stack(
+        children: [
+          // Stroke Text (drawn behind)
+          Text(
+            text.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: strokeTextStyle,
+            overflow: TextOverflow.visible, // Changed from ellipsis
+          ),
+          // Fill Text (drawn on top)
+          Text(
+            text.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: fillTextStyle,
+            overflow: TextOverflow.visible, // Changed from ellipsis
+          ),
+        ],
+      );
+    }
+
+    return RepaintBoundary(
+      key: _memeBoundaryKey,
+      child: AspectRatio(
+        aspectRatio: 4 / 3, // Or derive from image, or fixed size
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.dividerColor, width: 1),
+            color: Colors.black, // Background if image doesn't fill
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              Center(child: imageWidget), // Background image
+
+              // Top Text Element
+              Positioned(
+                top: 10, left: 10, right: 10,
+                child: _buildTextElement(_topTextController.text, isTopText: true),
+              ),
+
+              // Bottom Text Element
+              Positioned(
+                bottom: 10, left: 10, right: 10,
+                child: _buildTextElement(_bottomTextController.text, isTopText: false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  Widget _buildEditingControls(BuildContext context) {
-    // ... (implementation as previously defined)
-    final ThemeData theme = Theme.of(context);
-    return Padding(padding: const EdgeInsets.all(16.0), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Text("Edit Meme Text & Style", style: theme.textTheme.titleLarge), const SizedBox(height: 16), TextField(controller: _topTextController, decoration: InputDecoration(labelText: 'Top Text', hintText: 'Enter top text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2), const SizedBox(height: 12), TextField(controller: _bottomTextController, decoration: InputDecoration(labelText: 'Bottom Text', hintText: 'Enter bottom text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2), const SizedBox(height: 20), Text('Font Size: ${_fontSize.round()}', style: theme.textTheme.titleMedium), Slider(value: _fontSize, min: 12.0, max: 72.0, divisions: 60, label: _fontSize.round().toString(), onChanged: (double value) => setState(() => _fontSize = value)), const SizedBox(height: 10), Text('Text Color:', style: theme.textTheme.titleMedium), const SizedBox(height: 8), Wrap(spacing: 8.0, runSpacing: 8.0, alignment: WrapAlignment.center, children: [_buildColorButton(Colors.white, "White"), _buildColorButton(Colors.black, "Black"), _buildColorButton(Colors.yellowAccent, "Yellow"), _buildColorButton(Colors.redAccent, "Red"), _buildColorButton(Colors.lightBlueAccent, "Blue")]), const SizedBox(height: 20), Text('Font Family:', style: theme.textTheme.titleMedium), DropdownButtonFormField<String>(value: _fontFamily, decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true, contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0)), items: <String>['Impact', 'Arial', 'Comic Sans MS', 'Roboto', 'Times New Roman'].map<DropdownMenuItem<String>>((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: TextStyle(fontFamily: value, fontSize: 16)))).toList(), onChanged: (String? newValue) { if (newValue != null) setState(() => _fontFamily = newValue); })]));
-  }
+Widget _buildStrokeColorButton(Color color, BuildContext context) {
+  final theme = Theme.of(context);
+  return InkWell(
+    onTap: (_isSaving || _isSharing) ? null : () => setState(() => _textStrokeColor = color),
+    child: Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: _textStrokeColor == color ? theme.colorScheme.primary : Colors.grey,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 2,
+            offset: const Offset(1,1),
+          )
+        ]
+      ),
+    ),
+  );
+}
 
-  Widget _buildColorButton(Color color, String tooltip) {
-    // ... (implementation as previously defined)
+
+// New method to show the advanced color picker dialog
+Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
+  Color currentColor = forStroke ? _textStrokeColor : _textColor;
+  Color pickerColor = currentColor; // Temporary color for the picker dialog
+
+  // Disable if saving or sharing
+  if (_isSaving || _isSharing) return;
+
+  // final scaffoldMessenger = ScaffoldMessenger.of(context); // Cache for async gap // Not strictly needed here
+
+  await showDialog<void>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(forStroke ? 'Pick an Outline Color' : 'Pick a Fill Color'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: pickerColor, // Current color for the picker
+            onColorChanged: (Color color) {
+              pickerColor = color; // Update temporary color as user interacts
+            },
+            // Optional: customize the picker
+            // enableAlpha: false, // Set to true if you want opacity control
+            // displayThumbColor: true,
+            // pickerAreaHeightPercent: 0.8,
+            // colorPickerWidth: 300,
+            // labelTypes: const [ColorLabelType.rgb, ColorLabelType.hsv, ColorLabelType.hex],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop(); // Dismiss dialog without applying color
+            },
+          ),
+          ElevatedButton(
+            child: const Text('Select Color'),
+            onPressed: () {
+              if (mounted) { // Ensure widget is still in the tree
+                setState(() {
+                  if (forStroke) {
+                    _textStrokeColor = pickerColor;
+                  } else {
+                    _textColor = pickerColor;
+                  }
+                });
+              }
+              Navigator.of(context).pop(); // Dismiss dialog
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
+Widget _buildEditingControls(BuildContext context) {
+  final theme = Theme.of(context);
+
+  return Padding(
+    padding: const EdgeInsets.all(12.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // --- Existing Controls for Fill Text ---
+        TextField(
+          controller: _topTextController,
+          decoration: InputDecoration(labelText: 'Top Text', hintText: 'Enter top text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2,
+          enabled: !_isSaving && !_isSharing, // Disable if saving/sharing
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _bottomTextController,
+          decoration: InputDecoration(labelText: 'Bottom Text', hintText: 'Enter bottom text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2,
+          enabled: !_isSaving && !_isSharing, // Disable if saving/sharing
+        ),
+        const SizedBox(height: 16),
+        // Font Size Control
+        Row(children: [
+          const Text('Font Size:'),
+          Expanded(child: Slider(
+            value: _fontSize, min: 10.0, max: 60.0, divisions: 50, label: _fontSize.round().toString(),
+            onChanged: (_isSaving || _isSharing) ? null : (double value) => setState(() => _fontSize = value),
+          )),
+           Text(_fontSize.round().toString()), // Display current font size
+        ]),
+        // Text Fill Color Control
+        Text("Fill Color", style: theme.textTheme.titleSmall),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildColorButton(Colors.white, "White"),
+            _buildColorButton(Colors.black, "Black"),
+            _buildColorButton(Colors.yellowAccent.shade700, "Yellow"),
+            _buildColorButton(Colors.redAccent.shade400, "Red"),
+            IconButton( // Button to launch advanced color picker for fill
+              icon: Icon(Icons.colorize_outlined, color: _textColor), // Icon shows current fill color
+              tooltip: 'More Fill Colors',
+              onPressed: (_isSaving || _isSharing) ? null : () => _showAdvancedColorPicker(forStroke: false),
+            )
+          ],
+        ),
+        const SizedBox(height: 10), // Added space before font family
+        // Font Family Control
+        Row(children: [
+          const Text('Font:'), const SizedBox(width: 10),
+          Expanded( // Ensure dropdown doesn't overflow
+            child: DropdownButton<String>(
+              value: _fontFamily,
+              isExpanded: true, // Allow dropdown to expand
+              items: <String>['Impact', 'Arial', 'Comic Sans MS', 'Roboto', 'Times New Roman']
+                  .map<DropdownMenuItem<String>>((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: TextStyle(fontFamily: value))))
+                  .toList(),
+              onChanged: (_isSaving || _isSharing) ? null : (String? newValue) => setState(() => _fontFamily = newValue ?? _fontFamily),
+            ),
+          ),
+        ]),
+
+        const Divider(height: 24, thickness: 1),
+        Text("Text Outline Settings", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+
+        // --- New Controls for Text Stroke/Outline ---
+        SwitchListTile(
+          title: const Text('Enable Text Outline'),
+          value: _isTextStrokeEnabled,
+          onChanged: (_isSaving || _isSharing) ? null : (bool value) {
+            setState(() {
+              _isTextStrokeEnabled = value;
+            });
+          },
+          secondary: Icon(_isTextStrokeEnabled ? Icons.check_box_outlined : Icons.check_box_outline_blank_outlined),
+          activeColor: theme.colorScheme.primary,
+        ),
+        const SizedBox(height: 8),
+
+        // Stroke Width Control (conditionally shown)
+        if (_isTextStrokeEnabled) ...[
+          Row(
+            children: [
+              const Text('Outline Width:'),
+              Expanded(
+                child: Slider(
+                  value: _textStrokeWidth,
+                  min: 0.5, // Min stroke width
+                  max: 8.0,  // Max stroke width
+                  divisions: 15, // (8.0 - 0.5) / 0.5 = 15 divisions for 0.5 steps
+                  label: _textStrokeWidth.toStringAsFixed(1),
+                  onChanged: (_isSaving || _isSharing) ? null : (double value) {
+                    setState(() {
+                      _textStrokeWidth = value;
+                    });
+                  },
+                ),
+              ),
+              Text(_textStrokeWidth.toStringAsFixed(1)), // Display current width
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Stroke Color Control (conditionally shown)
+          // Stroke Color Control (conditionally shown)
+          Text("Outline Color", style: theme.textTheme.titleSmall), // Added label for clarity
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStrokeColorButton(Colors.black, context),
+              _buildStrokeColorButton(Colors.white, context),
+              _buildStrokeColorButton(Colors.redAccent.shade400, context),
+              _buildStrokeColorButton(Colors.blueAccent.shade400, context),
+              IconButton( // Button to launch advanced color picker for stroke
+                icon: Icon(Icons.colorize_outlined, color: _textStrokeColor), // Icon shows current stroke color
+                tooltip: 'More Outline Colors',
+                onPressed: (_isSaving || _isSharing) ? null : () => _showAdvancedColorPicker(forStroke: true),
+              )
+            ],
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+  Widget _buildColorButton(Color color, String tooltip) { // This is for FILL color
     bool isSelected = _textColor == color;
-    return Tooltip(message: tooltip, child: InkWell(onTap: () => setState(() => _textColor = color), borderRadius: BorderRadius.circular(15), child: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade400, width: isSelected ? 3 : 1.5), boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 3, spreadRadius: 1)] : []))));
+    // Access Theme.of(context) here if not already available as a member or passed in
+    // For simplicity, assuming it's available or _buildEditingControls passes it if needed.
+    // The original prompt's version seemed to imply Theme.of(context) would be available.
+    return Tooltip(message: tooltip, child: InkWell(onTap: (_isSaving || _isSharing) ? null : () => setState(() => _textColor = color), borderRadius: BorderRadius.circular(15), child: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade400, width: isSelected ? 3 : 1.5), boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 3, spreadRadius: 1)] : []))));
   }
 
   @override
