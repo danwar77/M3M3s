@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'overlay_item_model.dart'; // Assuming overlay_item_model.dart is in the same directory or lib/models/
 import 'dart:io'; // For File type
 import 'dart:typed_data'; // For Uint8List
 import 'dart:ui' as ui; // For ui.Image
@@ -46,6 +47,23 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   Color _textStrokeColor = Colors.black; // Default stroke color
   double _textStrokeWidth = 2.0; // Default stroke width
 
+  // New state variables for Sticker/Image Overlays
+  List<OverlayItem> _overlayItems = []; // List to hold all active overlay items
+  String? _selectedOverlayId;      // ID of the currently selected overlay item for manipulation
+
+  // Define the list of available sticker assets (as conceptualized in Plan Step 1)
+  // User needs to ensure these assets are in their pubspec.yaml and project structure.
+  final List<String> _availableStickerAssets = [
+    'assets/stickers/sticker_cool_sunglasses.png',
+    'assets/stickers/sticker_party_hat.png',
+    'assets/stickers/sticker_thumbs_up.png',
+    'assets/stickers/sticker_speech_bubble_wow.png',
+    'assets/stickers/sticker_heart_eyes.png',
+    // Add more placeholder paths or actual paths as defined by the user
+    // For the tool to work without real assets, these paths are just strings.
+    // In a real app, these assets must exist.
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -62,8 +80,108 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     super.dispose();
   }
 
+// Method to add a sticker to the canvas (called after selection from browser)
+void _addStickerToCanvas(String assetPath) {
+  if (!mounted) return;
+  setState(() {
+    final newSticker = OverlayItem(
+      assetPath: assetPath,
+      offset: const Offset(50, 50),
+      scale: 0.5,
+    );
+    _overlayItems.add(newSticker);
+    _selectedOverlayId = newSticker.id;
+    // Update isSelected state for all items
+    _overlayItems = _overlayItems.map((item) {
+      return item.copyWith(isSelected: item.id == _selectedOverlayId);
+    }).toList();
+  });
+  ScaffoldMessenger.of(context).removeCurrentSnackBar();
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Sticker added! Drag to position.'), duration: Duration(seconds: 2), backgroundColor: Colors.green),
+  );
+}
+
+// Method to show the sticker browser
+void _showStickerBrowser() {
+  if (_isSaving || _isSharing) return;
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (BuildContext bc) {
+      return DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (_, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).canvasColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16.0),
+                topRight: Radius.circular(16.0),
+              ),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10))),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 10.0),
+                  child: Text("Add a Sticker", style: Theme.of(context).textTheme.titleLarge),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(12.0),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 10.0,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: _availableStickerAssets.length,
+                    itemBuilder: (context, index) {
+                      final assetPath = _availableStickerAssets[index];
+                      return InkWell(
+                        onTap: () {
+                          _addStickerToCanvas(assetPath);
+                          Navigator.pop(context);
+                        },
+                        child: Card(
+                          elevation: 1.0,
+                          clipBehavior: Clip.antiAlias,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Image.asset(
+                              assetPath,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                print("Error loading asset: $assetPath, $error");
+                                return Center(child: Icon(Icons.error_outline, color: Colors.red.shade300, size: 30));
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
   Future<Uint8List?> _captureMemeAsImage() async {
-    // ... (implementation as previously defined)
     if (!mounted) return null;
     try {
       RenderRepaintBoundary boundary = _memeBoundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
@@ -129,11 +247,6 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
         'visibility': 'private',
       };
 
-      // This if block was redundant as the initial assignment of 'is_custom_image' is already comprehensive.
-      // if (memeDataToInsert['template_id'] == null && widget.initialMemeData.localImageFile == null) {
-      //    memeDataToInsert['is_custom_image'] = widget.initialMemeData.localImageFile != null || (widget.initialMemeData.imageUrl != null && widget.initialMemeData.templateId == null);
-      // }
-
       if (memeDataToInsert['template_id'] == null) {
         memeDataToInsert.remove('template_id');
       }
@@ -165,7 +278,6 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   }
 
   Future<void> _shareMeme() async {
-    // ... (implementation as previously defined)
     if (_isSaving || _isSharing) return;
     if (!mounted) return;
     setState(() => _isSharing = true);
@@ -208,11 +320,9 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   }
 
   Widget _buildMemePreview(BuildContext context) {
-    // ... (implementation as previously defined)
     final theme = Theme.of(context);
     Widget imageWidget;
 
-    // Image loading logic (remains the same)
     if (widget.initialMemeData.localImageFile != null) {
       imageWidget = Image.file(
         widget.initialMemeData.localImageFile!,
@@ -220,7 +330,7 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
         errorBuilder: (context, error, stackTrace) {
           print("Error loading local file: $error");
           return const Center(child: Icon(Icons.broken_image_outlined, size: 50, color: Colors.redAccent));
-        },
+        }
       );
     } else if (widget.initialMemeData.imageUrl != null) {
       imageWidget = Image.network(
@@ -233,7 +343,7 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
         errorBuilder: (context, error, stackTrace) {
           print("Error loading network image: $error");
           return const Center(child: Icon(Icons.signal_wifi_off_outlined, size: 50, color: Colors.orangeAccent));
-        },
+        }
       );
     } else {
       imageWidget = Container(
@@ -242,95 +352,153 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
       );
     }
 
-    // Helper function to build a single text element (either top or bottom)
     Widget _buildTextElement(String text, {required bool isTopText}) {
-      // Fill text style
-      TextStyle fillTextStyle = TextStyle(
-        fontFamily: _fontFamily,
-        fontSize: _fontSize,
-        color: _textColor, // User-selected fill color
-        fontWeight: FontWeight.bold, // Common for meme text
-      );
-
-      if (!_isTextStrokeEnabled || _textStrokeWidth <= 0) {
-        // If stroke is disabled or width is zero, just render the fill text
-        // Optionally, add back the old shadow effect here if desired as a fallback
-        if (!_isTextStrokeEnabled && _textStrokeWidth <=0) { // Only add shadows if stroke is explicitly off
-            fillTextStyle = fillTextStyle.copyWith(
-              shadows: const <Shadow>[ // Basic text outline for when stroke is off
-                  Shadow(offset: Offset(-1.5, -1.5), color: Colors.black54),
-                  Shadow(offset: Offset(1.5, -1.5), color: Colors.black54),
-                  Shadow(offset: Offset(1.5, 1.5), color: Colors.black54),
-                  Shadow(offset: Offset(-1.5, 1.5), color: Colors.black54),
-              ]
-            );
-        }
-        return Text(
-          text.toUpperCase(),
-          textAlign: TextAlign.center,
-          style: fillTextStyle,
-          overflow: TextOverflow.visible, // Changed from ellipsis to allow larger stroke to be visible
+        TextStyle fillTextStyle = TextStyle(
+          fontFamily: _fontFamily,
+          fontSize: _fontSize,
+          color: _textColor,
+          fontWeight: FontWeight.bold,
         );
-      }
 
-      // Stroke text style
-      TextStyle strokeTextStyle = TextStyle(
-        fontFamily: _fontFamily,
-        fontSize: _fontSize,
-        fontWeight: FontWeight.bold, // Match fill's weight for consistent glyph shape
-        foreground: Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = _textStrokeWidth
-          ..color = _textStrokeColor // User-selected stroke color
-          ..strokeJoin = StrokeJoin.round // Common for better looking corners
-          ..strokeCap = StrokeCap.round,
-      );
-
-      return Stack(
-        children: [
-          // Stroke Text (drawn behind)
-          Text(
-            text.toUpperCase(),
-            textAlign: TextAlign.center,
-            style: strokeTextStyle,
-            overflow: TextOverflow.visible, // Changed from ellipsis
-          ),
-          // Fill Text (drawn on top)
-          Text(
+        if (!_isTextStrokeEnabled || _textStrokeWidth <= 0) {
+          if (!_isTextStrokeEnabled && _textStrokeWidth <=0) {
+              fillTextStyle = fillTextStyle.copyWith(
+                shadows: const <Shadow>[
+                    Shadow(offset: Offset(-1.5, -1.5), color: Colors.black54),
+                    Shadow(offset: Offset(1.5, -1.5), color: Colors.black54),
+                    Shadow(offset: Offset(1.5, 1.5), color: Colors.black54),
+                    Shadow(offset: Offset(-1.5, 1.5), color: Colors.black54),
+                ]
+              );
+          }
+          return Text(
             text.toUpperCase(),
             textAlign: TextAlign.center,
             style: fillTextStyle,
-            overflow: TextOverflow.visible, // Changed from ellipsis
-          ),
-        ],
-      );
-    }
+            overflow: TextOverflow.visible,
+          );
+        }
+
+        TextStyle strokeTextStyle = TextStyle(
+          fontFamily: _fontFamily,
+          fontSize: _fontSize,
+          fontWeight: FontWeight.bold,
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = _textStrokeWidth
+            ..color = _textStrokeColor
+            ..strokeJoin = StrokeJoin.round
+            ..strokeCap = StrokeCap.round,
+        );
+
+        return Stack(
+          children: [
+            Text(
+              text.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: strokeTextStyle,
+              overflow: TextOverflow.visible,
+            ),
+            Text(
+              text.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: fillTextStyle,
+              overflow: TextOverflow.visible,
+            ),
+          ],
+        );
+      }
 
     return RepaintBoundary(
       key: _memeBoundaryKey,
       child: AspectRatio(
-        aspectRatio: 4 / 3, // Or derive from image, or fixed size
+        aspectRatio: 4 / 3,
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: theme.dividerColor, width: 1),
-            color: Colors.black, // Background if image doesn't fill
+            color: Colors.black,
           ),
           child: Stack(
             alignment: Alignment.center,
             children: <Widget>[
-              Center(child: imageWidget), // Background image
-
-              // Top Text Element
+              Center(child: imageWidget),
               Positioned(
                 top: 10, left: 10, right: 10,
                 child: _buildTextElement(_topTextController.text, isTopText: true),
               ),
-
-              // Bottom Text Element
               Positioned(
                 bottom: 10, left: 10, right: 10,
                 child: _buildTextElement(_bottomTextController.text, isTopText: false),
               ),
+              ..._overlayItems.map((overlayItem) {
+                const double stickerBaseRenderSize = 60.0;
+                Widget stickerVisual = Image.asset(
+                  overlayItem.assetPath,
+                  width: stickerBaseRenderSize * overlayItem.scale,
+                  height: stickerBaseRenderSize * overlayItem.scale,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    print("Error loading sticker asset: ${overlayItem.assetPath}, $error");
+                    return Container(
+                      width: stickerBaseRenderSize * overlayItem.scale,
+                      height: stickerBaseRenderSize * overlayItem.scale,
+                      color: Colors.red.withOpacity(0.5),
+                      child: const Icon(Icons.error_outline, size: 20, color: Colors.white),
+                    );
+                  },
+                );
+
+                if (overlayItem.rotation != 0.0) {
+                  stickerVisual = Transform.rotate(
+                    angle: overlayItem.rotation,
+                    child: stickerVisual,
+                  );
+                }
+
+                return Positioned(
+                  left: overlayItem.offset.dx,
+                  top: overlayItem.offset.dy,
+                  child: GestureDetector(
+                    onPanStart: (DragStartDetails details) {
+                      if (!mounted || _isSaving || _isSharing) return;
+                      setState(() {
+                        final index = _overlayItems.indexWhere((item) => item.id == overlayItem.id);
+                        if (index != -1) {
+                          final item = _overlayItems.removeAt(index);
+                          _overlayItems.add(item);
+                          _selectedOverlayId = item.id;
+                        }
+                        _overlayItems = _overlayItems.map((item) {
+                          return item.copyWith(isSelected: item.id == _selectedOverlayId);
+                        }).toList();
+                      });
+                    },
+                    onPanUpdate: (DragUpdateDetails details) {
+                      if (!mounted || _isSaving || _isSharing) return;
+                      setState(() {
+                        final index = _overlayItems.indexWhere((item) => item.id == overlayItem.id);
+                        if (index != -1) {
+                          _overlayItems[index].offset = Offset(
+                            _overlayItems[index].offset.dx + details.delta.dx,
+                            _overlayItems[index].offset.dy + details.delta.dy,
+                          );
+                        }
+                      });
+                    },
+                    onPanEnd: (DragEndDetails details) {
+                      // if (mounted && _selectedOverlayId == overlayItem.id) {
+                      //   setState(() {
+                      //     // _selectedOverlayId = null;
+                      //     // _overlayItems = _overlayItems.map((item) => item.copyWith(isSelected: false)).toList();
+                      //   });
+                      // }
+                    },
+                    child: Container(
+                      child: stickerVisual,
+                    ),
+                  ),
+                );
+              }).toList(),
             ],
           ),
         ),
@@ -364,16 +532,11 @@ Widget _buildStrokeColorButton(Color color, BuildContext context) {
   );
 }
 
-
-// New method to show the advanced color picker dialog
 Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
   Color currentColor = forStroke ? _textStrokeColor : _textColor;
-  Color pickerColor = currentColor; // Temporary color for the picker dialog
+  Color pickerColor = currentColor;
 
-  // Disable if saving or sharing
   if (_isSaving || _isSharing) return;
-
-  // final scaffoldMessenger = ScaffoldMessenger.of(context); // Cache for async gap // Not strictly needed here
 
   await showDialog<void>(
     context: context,
@@ -382,29 +545,23 @@ Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
         title: Text(forStroke ? 'Pick an Outline Color' : 'Pick a Fill Color'),
         content: SingleChildScrollView(
           child: ColorPicker(
-            pickerColor: pickerColor, // Current color for the picker
+            pickerColor: pickerColor,
             onColorChanged: (Color color) {
-              pickerColor = color; // Update temporary color as user interacts
+              pickerColor = color;
             },
-            // Optional: customize the picker
-            // enableAlpha: false, // Set to true if you want opacity control
-            // displayThumbColor: true,
-            // pickerAreaHeightPercent: 0.8,
-            // colorPickerWidth: 300,
-            // labelTypes: const [ColorLabelType.rgb, ColorLabelType.hsv, ColorLabelType.hex],
           ),
         ),
         actions: <Widget>[
           TextButton(
             child: const Text('Cancel'),
             onPressed: () {
-              Navigator.of(context).pop(); // Dismiss dialog without applying color
+              Navigator.of(context).pop();
             },
           ),
           ElevatedButton(
             child: const Text('Select Color'),
             onPressed: () {
-              if (mounted) { // Ensure widget is still in the tree
+              if (mounted) {
                 setState(() {
                   if (forStroke) {
                     _textStrokeColor = pickerColor;
@@ -413,7 +570,7 @@ Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
                   }
                 });
               }
-              Navigator.of(context).pop(); // Dismiss dialog
+              Navigator.of(context).pop();
             },
           ),
         ],
@@ -421,7 +578,6 @@ Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
     },
   );
 }
-
 
 Widget _buildEditingControls(BuildContext context) {
   final theme = Theme.of(context);
@@ -431,29 +587,15 @@ Widget _buildEditingControls(BuildContext context) {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // --- Existing Controls for Fill Text ---
-        TextField(
-          controller: _topTextController,
-          decoration: InputDecoration(labelText: 'Top Text', hintText: 'Enter top text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2,
-          enabled: !_isSaving && !_isSharing, // Disable if saving/sharing
-        ),
+        TextField(controller: _topTextController, decoration: InputDecoration(labelText: 'Top Text', hintText: 'Enter top text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2, enabled: !_isSaving && !_isSharing),
         const SizedBox(height: 12),
-        TextField(
-          controller: _bottomTextController,
-          decoration: InputDecoration(labelText: 'Bottom Text', hintText: 'Enter bottom text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2,
-          enabled: !_isSaving && !_isSharing, // Disable if saving/sharing
-        ),
+        TextField(controller: _bottomTextController, decoration: InputDecoration(labelText: 'Bottom Text', hintText: 'Enter bottom text here', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), filled: true), maxLines: 2, enabled: !_isSaving && !_isSharing),
         const SizedBox(height: 16),
-        // Font Size Control
         Row(children: [
           const Text('Font Size:'),
-          Expanded(child: Slider(
-            value: _fontSize, min: 10.0, max: 60.0, divisions: 50, label: _fontSize.round().toString(),
-            onChanged: (_isSaving || _isSharing) ? null : (double value) => setState(() => _fontSize = value),
-          )),
-           Text(_fontSize.round().toString()), // Display current font size
+          Expanded(child: Slider(value: _fontSize, min: 10.0, max: 60.0, divisions: 50, label: _fontSize.round().toString(), onChanged: (_isSaving || _isSharing) ? null : (double value) => setState(() => _fontSize = value))),
+           Text(_fontSize.round().toString()),
         ]),
-        // Text Fill Color Control
         Text("Fill Color", style: theme.textTheme.titleSmall),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -462,21 +604,20 @@ Widget _buildEditingControls(BuildContext context) {
             _buildColorButton(Colors.black, "Black"),
             _buildColorButton(Colors.yellowAccent.shade700, "Yellow"),
             _buildColorButton(Colors.redAccent.shade400, "Red"),
-            IconButton( // Button to launch advanced color picker for fill
-              icon: Icon(Icons.colorize_outlined, color: _textColor), // Icon shows current fill color
+            IconButton(
+              icon: Icon(Icons.colorize_outlined, color: _textColor),
               tooltip: 'More Fill Colors',
               onPressed: (_isSaving || _isSharing) ? null : () => _showAdvancedColorPicker(forStroke: false),
             )
           ],
         ),
-        const SizedBox(height: 10), // Added space before font family
-        // Font Family Control
+        const SizedBox(height: 10),
         Row(children: [
           const Text('Font:'), const SizedBox(width: 10),
-          Expanded( // Ensure dropdown doesn't overflow
+          Expanded(
             child: DropdownButton<String>(
               value: _fontFamily,
-              isExpanded: true, // Allow dropdown to expand
+              isExpanded: true,
               items: <String>['Impact', 'Arial', 'Comic Sans MS', 'Roboto', 'Times New Roman']
                   .map<DropdownMenuItem<String>>((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: TextStyle(fontFamily: value))))
                   .toList(),
@@ -488,48 +629,22 @@ Widget _buildEditingControls(BuildContext context) {
         const Divider(height: 24, thickness: 1),
         Text("Text Outline Settings", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-
-        // --- New Controls for Text Stroke/Outline ---
         SwitchListTile(
           title: const Text('Enable Text Outline'),
           value: _isTextStrokeEnabled,
-          onChanged: (_isSaving || _isSharing) ? null : (bool value) {
-            setState(() {
-              _isTextStrokeEnabled = value;
-            });
-          },
+          onChanged: (_isSaving || _isSharing) ? null : (bool value) => setState(() => _isTextStrokeEnabled = value),
           secondary: Icon(_isTextStrokeEnabled ? Icons.check_box_outlined : Icons.check_box_outline_blank_outlined),
           activeColor: theme.colorScheme.primary,
         ),
-        const SizedBox(height: 8),
-
-        // Stroke Width Control (conditionally shown)
         if (_isTextStrokeEnabled) ...[
-          Row(
-            children: [
-              const Text('Outline Width:'),
-              Expanded(
-                child: Slider(
-                  value: _textStrokeWidth,
-                  min: 0.5, // Min stroke width
-                  max: 8.0,  // Max stroke width
-                  divisions: 15, // (8.0 - 0.5) / 0.5 = 15 divisions for 0.5 steps
-                  label: _textStrokeWidth.toStringAsFixed(1),
-                  onChanged: (_isSaving || _isSharing) ? null : (double value) {
-                    setState(() {
-                      _textStrokeWidth = value;
-                    });
-                  },
-                ),
-              ),
-              Text(_textStrokeWidth.toStringAsFixed(1)), // Display current width
-            ],
-          ),
           const SizedBox(height: 8),
-
-          // Stroke Color Control (conditionally shown)
-          // Stroke Color Control (conditionally shown)
-          Text("Outline Color", style: theme.textTheme.titleSmall), // Added label for clarity
+          Row(children: [
+            const Text('Outline Width:'),
+            Expanded(child: Slider(value: _textStrokeWidth, min: 0.5, max: 8.0, divisions: 15, label: _textStrokeWidth.toStringAsFixed(1), onChanged: (_isSaving || _isSharing) ? null : (double value) => setState(() => _textStrokeWidth = value))),
+            Text(_textStrokeWidth.toStringAsFixed(1)),
+          ]),
+          const SizedBox(height: 8),
+          Text("Outline Color", style: theme.textTheme.titleSmall),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -537,14 +652,29 @@ Widget _buildEditingControls(BuildContext context) {
               _buildStrokeColorButton(Colors.white, context),
               _buildStrokeColorButton(Colors.redAccent.shade400, context),
               _buildStrokeColorButton(Colors.blueAccent.shade400, context),
-              IconButton( // Button to launch advanced color picker for stroke
-                icon: Icon(Icons.colorize_outlined, color: _textStrokeColor), // Icon shows current stroke color
+              IconButton(
+                icon: Icon(Icons.colorize_outlined, color: _textStrokeColor),
                 tooltip: 'More Outline Colors',
                 onPressed: (_isSaving || _isSharing) ? null : () => _showAdvancedColorPicker(forStroke: true),
               )
             ],
           ),
         ],
+
+        const Divider(height: 24, thickness: 1),
+        Text("Stickers & Overlays", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.sticky_note_2_outlined),
+          label: const Text('Add Sticker'),
+          style: ElevatedButton.styleFrom(
+            // backgroundColor: theme.colorScheme.secondary,
+            // foregroundColor: theme.colorScheme.onSecondary,
+          ),
+          onPressed: (_isSaving || _isSharing) ? null : _showStickerBrowser,
+        ),
+        // TODO: Add controls for selected sticker manipulation later (delete, layer order, etc.)
+
       ],
     ),
   );
@@ -552,15 +682,11 @@ Widget _buildEditingControls(BuildContext context) {
 
   Widget _buildColorButton(Color color, String tooltip) { // This is for FILL color
     bool isSelected = _textColor == color;
-    // Access Theme.of(context) here if not already available as a member or passed in
-    // For simplicity, assuming it's available or _buildEditingControls passes it if needed.
-    // The original prompt's version seemed to imply Theme.of(context) would be available.
     return Tooltip(message: tooltip, child: InkWell(onTap: (_isSaving || _isSharing) ? null : () => setState(() => _textColor = color), borderRadius: BorderRadius.circular(15), child: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade400, width: isSelected ? 3 : 1.5), boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 3, spreadRadius: 1)] : []))));
   }
 
   @override
   Widget build(BuildContext context) {
-    // ... (implementation as previously defined)
     return Scaffold(appBar: AppBar(title: const Text('Preview & Edit Meme'), elevation: 1.0, actions: [_isSharing ? const Padding(padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0), child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))) : IconButton(icon: const Icon(Icons.share_outlined), tooltip: 'Share Meme', onPressed: _isSaving ? null : _shareMeme), _isSaving ? const Padding(padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0), child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))) : IconButton(icon: const Icon(Icons.save_alt_outlined), tooltip: 'Save Meme', onPressed: _isSharing ? null : _saveMeme)]), body: SingleChildScrollView(child: Column(children: <Widget>[const SizedBox(height: 10), _buildMemePreview(context), const Divider(height: 20, thickness: 1, indent: 16, endIndent: 16), _buildEditingControls(context), const SizedBox(height: 20)])));
   }
 }
