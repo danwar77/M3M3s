@@ -51,6 +51,12 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   List<OverlayItem> _overlayItems = []; // List to hold all active overlay items
   String? _selectedOverlayId;      // ID of the currently selected overlay item for manipulation
 
+  // New state variables for gesture handling of selected overlay item
+  double _gestureInitialStickerScale = 1.0;
+  double _gestureInitialStickerRotation = 0.0;
+  // Offset _gestureInitialFocalPoint = Offset.zero; // For more precise combined drag/scale/rotate - keep commented for now
+  // Offset _gestureInitialStickerOffset = Offset.zero; // For more precise combined drag/scale/rotate - keep commented for now
+
   // Define the list of available sticker assets (as conceptualized in Plan Step 1)
   // User needs to ensure these assets are in their pubspec.yaml and project structure.
   final List<String> _availableStickerAssets = [
@@ -59,9 +65,6 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     'assets/stickers/sticker_thumbs_up.png',
     'assets/stickers/sticker_speech_bubble_wow.png',
     'assets/stickers/sticker_heart_eyes.png',
-    // Add more placeholder paths or actual paths as defined by the user
-    // For the tool to work without real assets, these paths are just strings.
-    // In a real app, these assets must exist.
   ];
 
   @override
@@ -80,7 +83,6 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
     super.dispose();
   }
 
-// Method to add a sticker to the canvas (called after selection from browser)
 void _addStickerToCanvas(String assetPath) {
   if (!mounted) return;
   setState(() {
@@ -91,7 +93,6 @@ void _addStickerToCanvas(String assetPath) {
     );
     _overlayItems.add(newSticker);
     _selectedOverlayId = newSticker.id;
-    // Update isSelected state for all items
     _overlayItems = _overlayItems.map((item) {
       return item.copyWith(isSelected: item.id == _selectedOverlayId);
     }).toList();
@@ -102,7 +103,6 @@ void _addStickerToCanvas(String assetPath) {
   );
 }
 
-// Method to show the sticker browser
 void _showStickerBrowser() {
   if (_isSaving || _isSharing) return;
 
@@ -183,6 +183,13 @@ void _showStickerBrowser() {
 
   Future<Uint8List?> _captureMemeAsImage() async {
     if (!mounted) return null;
+    if (_selectedOverlayId != null) {
+      setState(() {
+        _selectedOverlayId = null;
+        _overlayItems = _overlayItems.map((item) => item.copyWith(isSelected: false)).toList();
+      });
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
     try {
       RenderRepaintBoundary boundary = _memeBoundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       ui.Image image = await boundary.toImage(pixelRatio: 3.0);
@@ -432,26 +439,97 @@ void _showStickerBrowser() {
               ),
               ..._overlayItems.map((overlayItem) {
                 const double stickerBaseRenderSize = 60.0;
+                bool isSelected = overlayItem.id == _selectedOverlayId;
+
                 Widget stickerVisual = Image.asset(
                   overlayItem.assetPath,
-                  width: stickerBaseRenderSize * overlayItem.scale,
-                  height: stickerBaseRenderSize * overlayItem.scale,
+                  width: stickerBaseRenderSize,
+                  height: stickerBaseRenderSize,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     print("Error loading sticker asset: ${overlayItem.assetPath}, $error");
                     return Container(
-                      width: stickerBaseRenderSize * overlayItem.scale,
-                      height: stickerBaseRenderSize * overlayItem.scale,
-                      color: Colors.red.withOpacity(0.5),
-                      child: const Icon(Icons.error_outline, size: 20, color: Colors.white),
+                      width: stickerBaseRenderSize, height: stickerBaseRenderSize,
+                      color: Colors.red.withOpacity(0.3),
+                      child: const Icon(Icons.broken_image_outlined, size: 20, color: Colors.white),
                     );
-                  },
+                  }
                 );
 
-                if (overlayItem.rotation != 0.0) {
-                  stickerVisual = Transform.rotate(
-                    angle: overlayItem.rotation,
+                Widget interactiveSticker = Transform.rotate(
+                  angle: overlayItem.rotation,
+                  child: Transform.scale(
+                    scale: overlayItem.scale,
                     child: stickerVisual,
+                  ),
+                );
+
+                final double actualScaledWidth = stickerBaseRenderSize * overlayItem.scale;
+                final double actualScaledHeight = stickerBaseRenderSize * overlayItem.scale;
+
+                List<Widget> stackChildren = [
+                  interactiveSticker,
+                ];
+
+                if (isSelected) {
+                  stackChildren.add(
+                    Positioned.fill(
+                      child: Container(
+                        width: actualScaledWidth,
+                        height: actualScaledHeight,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.blueAccent.withOpacity(0.9),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+
+                  final double handleSize = 24.0;
+                  final double handleOffset = -handleSize / 2;
+
+                  stackChildren.add(
+                    Positioned(
+                      top: handleOffset,
+                      right: handleOffset,
+                      child: GestureDetector(
+                        onTap: () {
+                          if(!mounted || _isSaving || _isSharing) return;
+                          final String? currentSelectedId = overlayItem.id;
+                          setState(() {
+                              _overlayItems.removeWhere((item) => item.id == currentSelectedId);
+                              if (_selectedOverlayId == currentSelectedId) {
+                                _selectedOverlayId = null;
+                              }
+                          });
+                          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Sticker removed.'), backgroundColor: Colors.orangeAccent)
+                          );
+                        },
+                        child: Container(
+                          width: handleSize, height: handleSize,
+                          decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                          child: const Icon(Icons.close_rounded, color: Colors.white, size: 16.0),
+                        ),
+                      ),
+                    ),
+                  );
+
+                  stackChildren.add(
+                    Positioned(
+                      bottom: handleOffset,
+                      right: handleOffset,
+                      child: GestureDetector(
+                        child: Container(
+                          width: handleSize, height: handleSize,
+                          decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.9), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 1.0)),
+                          child: const Icon(Icons.transform_rounded, color: Colors.white, size: 14.0),
+                        ),
+                      ),
+                    ),
                   );
                 }
 
@@ -467,6 +545,8 @@ void _showStickerBrowser() {
                           final item = _overlayItems.removeAt(index);
                           _overlayItems.add(item);
                           _selectedOverlayId = item.id;
+                          _gestureInitialStickerScale = item.scale;
+                          _gestureInitialStickerRotation = item.rotation;
                         }
                         _overlayItems = _overlayItems.map((item) {
                           return item.copyWith(isSelected: item.id == _selectedOverlayId);
@@ -474,9 +554,9 @@ void _showStickerBrowser() {
                       });
                     },
                     onPanUpdate: (DragUpdateDetails details) {
-                      if (!mounted || _isSaving || _isSharing) return;
-                      setState(() {
-                        final index = _overlayItems.indexWhere((item) => item.id == overlayItem.id);
+                      if (!mounted || _isSaving || _isSharing || _selectedOverlayId != overlayItem.id) return;
+                       setState(() {
+                        final index = _overlayItems.indexWhere((item) => item.id == _selectedOverlayId);
                         if (index != -1) {
                           _overlayItems[index].offset = Offset(
                             _overlayItems[index].offset.dx + details.delta.dx,
@@ -485,16 +565,46 @@ void _showStickerBrowser() {
                         }
                       });
                     },
-                    onPanEnd: (DragEndDetails details) {
-                      // if (mounted && _selectedOverlayId == overlayItem.id) {
-                      //   setState(() {
-                      //     // _selectedOverlayId = null;
-                      //     // _overlayItems = _overlayItems.map((item) => item.copyWith(isSelected: false)).toList();
-                      //   });
-                      // }
+                    onScaleStart: (ScaleStartDetails details) {
+                      if (!mounted || _isSaving || _isSharing) return;
+                      final int index = _overlayItems.indexWhere((item) => item.id == overlayItem.id);
+                      if (index == -1) return;
+                      final OverlayItem currentItem = _overlayItems[index];
+                      if (_selectedOverlayId != overlayItem.id || index != _overlayItems.length - 1) {
+                        setState(() {
+                          final item = _overlayItems.removeAt(index);
+                          _overlayItems.add(item);
+                          _selectedOverlayId = item.id;
+                          _overlayItems = _overlayItems.map((i) => i.copyWith(isSelected: i.id == _selectedOverlayId)).toList();
+                          _gestureInitialStickerScale = _overlayItems.last.scale;
+                          _gestureInitialStickerRotation = _overlayItems.last.rotation;
+                        });
+                      } else {
+                        _gestureInitialStickerScale = currentItem.scale;
+                        _gestureInitialStickerRotation = currentItem.rotation;
+                      }
                     },
-                    child: Container(
-                      child: stickerVisual,
+                    onScaleUpdate: (ScaleUpdateDetails details) {
+                      if (!mounted || _isSaving || _isSharing || _selectedOverlayId != overlayItem.id) return;
+                      setState(() {
+                        final index = _overlayItems.indexWhere((item) => item.id == _selectedOverlayId);
+                        if (index != -1) {
+                          double newScale = _gestureInitialStickerScale * details.scale;
+                          _overlayItems[index].scale = newScale.clamp(0.2, 5.0);
+                          // Rotation logic will be added here in next step
+                          // _overlayItems[index].rotation = _gestureInitialStickerRotation + details.rotation;
+                        }
+                      });
+                    },
+                    onScaleEnd: (ScaleEndDetails details) {
+                      if (!mounted || _isSaving || _isSharing || _selectedOverlayId != overlayItem.id) return;
+                      // _gestureInitialStickerScale = 1.0;
+                      // _gestureInitialStickerRotation = 0.0;
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: stackChildren,
                     ),
                   ),
                 );
