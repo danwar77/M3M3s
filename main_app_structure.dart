@@ -108,10 +108,27 @@ class _MainScreenState extends State<MainScreen> {
         title: Text(_appBarTitles[_selectedIndex]),
         actions: [
           IconButton(
+            icon: const Icon(Icons.language),
+            tooltip: 'Change Language (Placeholder)',
+            onPressed: () {
+              // Placeholder action
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Language change functionality to be implemented!'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              // TODO: Implement language selection dialog/logic here later.
+              // This will involve calling a method (e.g., from _MemeAppState)
+              // to change the locale and rebuild the app with new translations.
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
-            onPressed: _performLogout, // Call the implemented logout method
-          )
+            onPressed: _performLogout, // Existing logout button
+          ),
         ],
       ),
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
