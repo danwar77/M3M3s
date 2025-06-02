@@ -20,7 +20,7 @@ class MemeData {
     this.imageUrl,
     this.localImageFile,
     this.templateId,
-  }) : assert(imageUrl != null || localImageFile != null,
+  }) : assert(imageUrl != null || localImageFile != null, 
             'Either imageUrl or localImageFile must be provided for display.');
 }
 ```
@@ -40,12 +40,12 @@ class MemeData {
     *   The implemented logic is:
       ```dart
       if (widget.initialMemeData.localImageFile != null) { // Prioritizes localImageFile
-        imageWidget = Image.file(widget.initialMemeData.localImageFile!,
+        imageWidget = Image.file(widget.initialMemeData.localImageFile!, 
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) { /* ... */ } // Now includes errorBuilder
         );
       } else if (widget.initialMemeData.imageUrl != null) {
-        imageWidget = Image.network(widget.initialMemeData.imageUrl!,
+        imageWidget = Image.network(widget.initialMemeData.imageUrl!, 
           fit: BoxFit.contain,
           loadingBuilder: (context, child, loadingProgress) { /* ... */ },
           errorBuilder: (context, error, stackTrace) { /* ... */ }

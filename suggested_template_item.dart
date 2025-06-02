@@ -37,8 +37,8 @@ class SuggestedTemplateItem extends StatelessWidget {
     final double? score = suggestionData['score'] as double?;
 
     // Determine the URL to display for the image preview
-    final String? displayImageUrl = (thumbnailUrl != null && thumbnailUrl.isNotEmpty)
-                                    ? thumbnailUrl
+    final String? displayImageUrl = (thumbnailUrl != null && thumbnailUrl.isNotEmpty) 
+                                    ? thumbnailUrl 
                                     : (imageUrl != null && imageUrl.isNotEmpty ? imageUrl : null);
 
     return InkWell(
@@ -57,7 +57,7 @@ class SuggestedTemplateItem extends StatelessWidget {
                 width: 64.0, // Slightly larger thumbnail
                 height: 64.0,
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Colors.grey[200], 
                   borderRadius: BorderRadius.circular(6.0), // Rounded corners for the image container
                   border: Border.all(color: theme.dividerColor.withOpacity(0.5), width: 0.5),
                 ),

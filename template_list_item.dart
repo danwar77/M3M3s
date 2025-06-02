@@ -49,15 +49,15 @@ class TemplateListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     // Use thumbnail if available and not empty, otherwise fallback to main image URL.
-    final String displayImageUrl =
-        (template.thumbnailUrl != null && template.thumbnailUrl!.isNotEmpty)
-            ? template.thumbnailUrl!
+    final String displayImageUrl = 
+        (template.thumbnailUrl != null && template.thumbnailUrl!.isNotEmpty) 
+            ? template.thumbnailUrl! 
             : template.imageUrl;
 
     return Card(
       elevation: 3.0, // Slightly more pronounced shadow
       clipBehavior: Clip.antiAlias, // Ensures the image respects the card's rounded corners
-      margin: const EdgeInsets.all(4.0),
+      margin: const EdgeInsets.all(4.0), 
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)), // Consistent rounded corners
       child: InkWell(
         onTap: onTap,

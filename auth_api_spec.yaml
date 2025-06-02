@@ -118,10 +118,10 @@ paths:
     post:
       summary: Verify Firebase ID Token & Sync User
       description: |
-        Verifies the Firebase ID token. If valid, the backend uses the decoded token
-        information (like UID) to identify the user. It can also be used to create a
-        user record in the backend's database if one doesn't exist for this Firebase UID,
-        or to retrieve existing user data. This is often called when the app starts or
+        Verifies the Firebase ID token. If valid, the backend uses the decoded token 
+        information (like UID) to identify the user. It can also be used to create a 
+        user record in the backend's database if one doesn't exist for this Firebase UID, 
+        or to retrieve existing user data. This is often called when the app starts or 
         after login/signup via Firebase on the client.
       tags:
         - Authentication
@@ -134,7 +134,7 @@ paths:
             schema:
               $ref: '#/components/schemas/AuthVerificationRequest'
         # Not strictly required by the prompt, but good practice to note if it can be empty
-        # required: false
+        # required: false 
       responses:
         '200':
           description: Successful token verification and user sync/retrieval.
@@ -168,7 +168,7 @@ paths:
     post:
       summary: Sync User Profile (Alternative to verify_token)
       description: |
-        Alternative endpoint for verifying Firebase ID token and syncing user data.
+        Alternative endpoint for verifying Firebase ID token and syncing user data. 
         Functionally similar to /auth/verify_token.
       tags:
         - User Management

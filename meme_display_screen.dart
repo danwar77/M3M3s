@@ -12,8 +12,8 @@ import 'package:path_provider/path_provider.dart'; // For temporary file storage
 class MemeData {
   final String? topText;
   final String? bottomText;
-  final String? imageUrl;
-  final File? localImageFile;
+  final String? imageUrl; 
+  final File? localImageFile; 
   final String? templateId;
 
   MemeData({
@@ -40,7 +40,7 @@ class _MemeDisplayScreenState extends State<MemeDisplayScreen> {
   String _fontFamily = 'Impact';
   final GlobalKey _memeBoundaryKey = GlobalKey();
   bool _isSaving = false;
-  bool _isSharing = false;
+  bool _isSharing = false; 
 
   // New state variables for Text Stroke/Outline
   bool _isTextStrokeEnabled = true; // Default to enabled
@@ -88,11 +88,11 @@ void _addStickerToCanvas(String assetPath) {
   setState(() {
     final newSticker = OverlayItem(
       assetPath: assetPath,
-      offset: const Offset(50, 50),
-      scale: 0.5,
+      offset: const Offset(50, 50), 
+      scale: 0.5, 
     );
     _overlayItems.add(newSticker);
-    _selectedOverlayId = newSticker.id;
+    _selectedOverlayId = newSticker.id; 
     _overlayItems = _overlayItems.map((item) {
       return item.copyWith(isSelected: item.id == _selectedOverlayId);
     }).toList();
@@ -104,7 +104,7 @@ void _addStickerToCanvas(String assetPath) {
 }
 
 void _showStickerBrowser() {
-  if (_isSaving || _isSharing) return;
+  if (_isSaving || _isSharing) return; 
 
   showModalBottomSheet(
     context: context,
@@ -127,7 +127,7 @@ void _showStickerBrowser() {
             ),
             child: Column(
               children: [
-                Padding(
+                Padding( 
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10))),
                 ),
@@ -140,10 +140,10 @@ void _showStickerBrowser() {
                     controller: scrollController,
                     padding: const EdgeInsets.all(12.0),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
+                      crossAxisCount: 4, 
                       crossAxisSpacing: 10.0,
                       mainAxisSpacing: 10.0,
-                      childAspectRatio: 1.0,
+                      childAspectRatio: 1.0, 
                     ),
                     itemCount: _availableStickerAssets.length,
                     itemBuilder: (context, index) {
@@ -151,14 +151,14 @@ void _showStickerBrowser() {
                       return InkWell(
                         onTap: () {
                           _addStickerToCanvas(assetPath);
-                          Navigator.pop(context);
+                          Navigator.pop(context); 
                         },
                         child: Card(
                           elevation: 1.0,
                           clipBehavior: Clip.antiAlias,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: Image.asset(
+                            child: Image.asset( 
                               assetPath,
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
@@ -188,11 +188,11 @@ void _showStickerBrowser() {
         _selectedOverlayId = null;
         _overlayItems = _overlayItems.map((item) => item.copyWith(isSelected: false)).toList();
       });
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future.delayed(const Duration(milliseconds: 50)); 
     }
     try {
       RenderRepaintBoundary boundary = _memeBoundaryKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0); 
       ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       return byteData?.buffer.asUint8List();
     } catch (e) {
@@ -211,8 +211,8 @@ void _showStickerBrowser() {
     if (_isSaving || _isSharing) return;
     if (!mounted) return;
     setState(() => _isSaving = true);
-
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    final scaffoldMessenger = ScaffoldMessenger.of(context); 
     scaffoldMessenger.removeCurrentSnackBar();
     scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Saving meme...'), duration: Duration(milliseconds: 1500)));
 
@@ -235,7 +235,7 @@ void _showStickerBrowser() {
     }
 
     final imageFileName = 'meme_${DateTime.now().millisecondsSinceEpoch}_${userId.substring(0,8)}.png';
-    final imagePath = '$userId/$imageFileName';
+    final imagePath = '$userId/$imageFileName'; 
 
     try {
       await supabase.storage.from('user_memes').uploadBinary(
@@ -244,20 +244,20 @@ void _showStickerBrowser() {
         fileOptions: const FileOptions(cacheControl: '3600', upsert: false, contentType: 'image/png'),
       );
       final String uploadedImageUrl = supabase.storage.from('user_memes').getPublicUrl(imagePath);
-
+      
       final Map<String, dynamic> memeDataToInsert = {
-        'user_id': userId,
-        'image_url': uploadedImageUrl,
+        'user_id': userId, 
+        'image_url': uploadedImageUrl, 
         'text_input': {'top': _topTextController.text.trim(), 'bottom': _bottomTextController.text.trim()},
-        'template_id': widget.initialMemeData.templateId,
-        'is_custom_image': widget.initialMemeData.localImageFile != null || (widget.initialMemeData.imageUrl != null && widget.initialMemeData.templateId == null),
-        'visibility': 'private',
+        'template_id': widget.initialMemeData.templateId, 
+        'is_custom_image': widget.initialMemeData.localImageFile != null || (widget.initialMemeData.imageUrl != null && widget.initialMemeData.templateId == null), 
+        'visibility': 'private', 
       };
-
+      
       if (memeDataToInsert['template_id'] == null) {
         memeDataToInsert.remove('template_id');
       }
-
+      
       await supabase.from('memes').insert(memeDataToInsert);
 
       if (mounted) {
@@ -285,7 +285,7 @@ void _showStickerBrowser() {
   }
 
   Future<void> _shareMeme() async {
-    if (_isSaving || _isSharing) return;
+    if (_isSaving || _isSharing) return; 
     if (!mounted) return;
     setState(() => _isSharing = true);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -329,12 +329,12 @@ void _showStickerBrowser() {
   Widget _buildMemePreview(BuildContext context) {
     final theme = Theme.of(context);
     Widget imageWidget;
-
+    
     if (widget.initialMemeData.localImageFile != null) {
       imageWidget = Image.file(
         widget.initialMemeData.localImageFile!,
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
+        errorBuilder: (context, error, stackTrace) { 
           print("Error loading local file: $error");
           return const Center(child: Icon(Icons.broken_image_outlined, size: 50, color: Colors.redAccent));
         }
@@ -343,11 +343,11 @@ void _showStickerBrowser() {
       imageWidget = Image.network(
         widget.initialMemeData.imageUrl!,
         fit: BoxFit.contain,
-        loadingBuilder: (context, child, loadingProgress) {
+        loadingBuilder: (context, child, loadingProgress) { 
           if (loadingProgress == null) return child;
           return const Center(child: CircularProgressIndicator(strokeWidth: 2.0));
         },
-        errorBuilder: (context, error, stackTrace) {
+        errorBuilder: (context, error, stackTrace) { 
           print("Error loading network image: $error");
           return const Center(child: Icon(Icons.signal_wifi_off_outlined, size: 50, color: Colors.orangeAccent));
         }
@@ -363,14 +363,14 @@ void _showStickerBrowser() {
         TextStyle fillTextStyle = TextStyle(
           fontFamily: _fontFamily,
           fontSize: _fontSize,
-          color: _textColor,
-          fontWeight: FontWeight.bold,
+          color: _textColor, 
+          fontWeight: FontWeight.bold, 
         );
 
         if (!_isTextStrokeEnabled || _textStrokeWidth <= 0) {
-          if (!_isTextStrokeEnabled && _textStrokeWidth <=0) {
+          if (!_isTextStrokeEnabled && _textStrokeWidth <=0) { 
               fillTextStyle = fillTextStyle.copyWith(
-                shadows: const <Shadow>[
+                shadows: const <Shadow>[ 
                     Shadow(offset: Offset(-1.5, -1.5), color: Colors.black54),
                     Shadow(offset: Offset(1.5, -1.5), color: Colors.black54),
                     Shadow(offset: Offset(1.5, 1.5), color: Colors.black54),
@@ -382,20 +382,20 @@ void _showStickerBrowser() {
             text.toUpperCase(),
             textAlign: TextAlign.center,
             style: fillTextStyle,
-            overflow: TextOverflow.visible,
+            overflow: TextOverflow.visible, 
           );
         }
 
         TextStyle strokeTextStyle = TextStyle(
           fontFamily: _fontFamily,
           fontSize: _fontSize,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.bold, 
           foreground: Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = _textStrokeWidth
-            ..color = _textStrokeColor
-            ..strokeJoin = StrokeJoin.round
-            ..strokeCap = StrokeCap.round,
+            ..color = _textStrokeColor 
+            ..strokeJoin = StrokeJoin.round 
+            ..strokeCap = StrokeCap.round, 
         );
 
         return Stack(
@@ -404,13 +404,13 @@ void _showStickerBrowser() {
               text.toUpperCase(),
               textAlign: TextAlign.center,
               style: strokeTextStyle,
-              overflow: TextOverflow.visible,
+              overflow: TextOverflow.visible, 
             ),
             Text(
               text.toUpperCase(),
               textAlign: TextAlign.center,
               style: fillTextStyle,
-              overflow: TextOverflow.visible,
+              overflow: TextOverflow.visible, 
             ),
           ],
         );
@@ -419,14 +419,14 @@ void _showStickerBrowser() {
     return RepaintBoundary(
       key: _memeBoundaryKey,
       child: AspectRatio(
-        aspectRatio: 4 / 3,
+        aspectRatio: 4 / 3, 
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: theme.dividerColor, width: 1),
             color: Colors.black,
           ),
-          child: Stack(
-            alignment: Alignment.center,
+          child: Stack( 
+            alignment: Alignment.center, 
             children: <Widget>[
               Center(child: imageWidget),
               Positioned(
@@ -443,7 +443,7 @@ void _showStickerBrowser() {
 
                 Widget stickerVisual = Image.asset(
                   overlayItem.assetPath,
-                  width: stickerBaseRenderSize,
+                  width: stickerBaseRenderSize, 
                   height: stickerBaseRenderSize,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
@@ -463,17 +463,17 @@ void _showStickerBrowser() {
                     child: stickerVisual,
                   ),
                 );
-
+                
                 final double actualScaledWidth = stickerBaseRenderSize * overlayItem.scale;
                 final double actualScaledHeight = stickerBaseRenderSize * overlayItem.scale;
 
                 List<Widget> stackChildren = [
-                  interactiveSticker,
+                  interactiveSticker, 
                 ];
 
                 if (isSelected) {
                   stackChildren.add(
-                    Positioned.fill(
+                    Positioned.fill( 
                       child: Container(
                         width: actualScaledWidth,
                         height: actualScaledHeight,
@@ -486,7 +486,7 @@ void _showStickerBrowser() {
                       ),
                     ),
                   );
-
+                  
                   final double handleSize = 24.0;
                   final double handleOffset = -handleSize / 2;
 
@@ -497,11 +497,11 @@ void _showStickerBrowser() {
                       child: GestureDetector(
                         onTap: () {
                           if(!mounted || _isSaving || _isSharing) return;
-                          final String? currentSelectedId = overlayItem.id;
+                          final String? currentSelectedId = overlayItem.id; 
                           setState(() {
                               _overlayItems.removeWhere((item) => item.id == currentSelectedId);
                               if (_selectedOverlayId == currentSelectedId) {
-                                _selectedOverlayId = null;
+                                _selectedOverlayId = null; 
                               }
                           });
                           ScaffoldMessenger.of(context).removeCurrentSnackBar();
@@ -532,7 +532,7 @@ void _showStickerBrowser() {
                     ),
                   );
                 }
-
+                
                 return Positioned(
                   left: overlayItem.offset.dx,
                   top: overlayItem.offset.dy,
@@ -543,8 +543,8 @@ void _showStickerBrowser() {
                         final index = _overlayItems.indexWhere((item) => item.id == overlayItem.id);
                         if (index != -1) {
                           final item = _overlayItems.removeAt(index);
-                          _overlayItems.add(item);
-                          _selectedOverlayId = item.id;
+                          _overlayItems.add(item); 
+                          _selectedOverlayId = item.id; 
                           _gestureInitialStickerScale = item.scale;
                           _gestureInitialStickerRotation = item.rotation;
                         }
@@ -568,12 +568,12 @@ void _showStickerBrowser() {
                     onScaleStart: (ScaleStartDetails details) {
                       if (!mounted || _isSaving || _isSharing) return;
                       final int index = _overlayItems.indexWhere((item) => item.id == overlayItem.id);
-                      if (index == -1) return;
+                      if (index == -1) return; 
                       final OverlayItem currentItem = _overlayItems[index];
                       if (_selectedOverlayId != overlayItem.id || index != _overlayItems.length - 1) {
                         setState(() {
                           final item = _overlayItems.removeAt(index);
-                          _overlayItems.add(item);
+                          _overlayItems.add(item); 
                           _selectedOverlayId = item.id;
                           _overlayItems = _overlayItems.map((i) => i.copyWith(isSelected: i.id == _selectedOverlayId)).toList();
                           _gestureInitialStickerScale = _overlayItems.last.scale;
@@ -590,7 +590,7 @@ void _showStickerBrowser() {
                         final index = _overlayItems.indexWhere((item) => item.id == _selectedOverlayId);
                         if (index != -1) {
                           double newScale = _gestureInitialStickerScale * details.scale;
-                          _overlayItems[index].scale = newScale.clamp(0.2, 5.0);
+                          _overlayItems[index].scale = newScale.clamp(0.2, 5.0); 
                           // Rotation logic will be added here in next step
                           // _overlayItems[index].rotation = _gestureInitialStickerRotation + details.rotation;
                         }
@@ -598,12 +598,12 @@ void _showStickerBrowser() {
                     },
                     onScaleEnd: (ScaleEndDetails details) {
                       if (!mounted || _isSaving || _isSharing || _selectedOverlayId != overlayItem.id) return;
-                      // _gestureInitialStickerScale = 1.0;
+                      // _gestureInitialStickerScale = 1.0; 
                       // _gestureInitialStickerRotation = 0.0;
                     },
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.center,
+                    child: Stack( 
+                      clipBehavior: Clip.none, 
+                      alignment: Alignment.center, 
                       children: stackChildren,
                     ),
                   ),
@@ -616,8 +616,8 @@ void _showStickerBrowser() {
     );
   }
 
-Widget _buildStrokeColorButton(Color color, BuildContext context) {
-  final theme = Theme.of(context);
+Widget _buildStrokeColorButton(Color color, BuildContext context) { 
+  final theme = Theme.of(context); 
   return InkWell(
     onTap: (_isSaving || _isSharing) ? null : () => setState(() => _textStrokeColor = color),
     child: Container(
@@ -644,7 +644,7 @@ Widget _buildStrokeColorButton(Color color, BuildContext context) {
 
 Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
   Color currentColor = forStroke ? _textStrokeColor : _textColor;
-  Color pickerColor = currentColor;
+  Color pickerColor = currentColor; 
 
   if (_isSaving || _isSharing) return;
 
@@ -655,9 +655,9 @@ Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
         title: Text(forStroke ? 'Pick an Outline Color' : 'Pick a Fill Color'),
         content: SingleChildScrollView(
           child: ColorPicker(
-            pickerColor: pickerColor,
+            pickerColor: pickerColor, 
             onColorChanged: (Color color) {
-              pickerColor = color;
+              pickerColor = color; 
             },
           ),
         ),
@@ -665,13 +665,13 @@ Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
           TextButton(
             child: const Text('Cancel'),
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(context).pop(); 
             },
           ),
           ElevatedButton(
             child: const Text('Select Color'),
             onPressed: () {
-              if (mounted) {
+              if (mounted) { 
                 setState(() {
                   if (forStroke) {
                     _textStrokeColor = pickerColor;
@@ -680,7 +680,7 @@ Future<void> _showAdvancedColorPicker({required bool forStroke}) async {
                   }
                 });
               }
-              Navigator.of(context).pop();
+              Navigator.of(context).pop(); 
             },
           ),
         ],
@@ -704,7 +704,7 @@ Widget _buildEditingControls(BuildContext context) {
         Row(children: [
           const Text('Font Size:'),
           Expanded(child: Slider(value: _fontSize, min: 10.0, max: 60.0, divisions: 50, label: _fontSize.round().toString(), onChanged: (_isSaving || _isSharing) ? null : (double value) => setState(() => _fontSize = value))),
-           Text(_fontSize.round().toString()),
+           Text(_fontSize.round().toString()), 
         ]),
         Text("Fill Color", style: theme.textTheme.titleSmall),
         Row(
@@ -714,28 +714,28 @@ Widget _buildEditingControls(BuildContext context) {
             _buildColorButton(Colors.black, "Black"),
             _buildColorButton(Colors.yellowAccent.shade700, "Yellow"),
             _buildColorButton(Colors.redAccent.shade400, "Red"),
-            IconButton(
-              icon: Icon(Icons.colorize_outlined, color: _textColor),
+            IconButton( 
+              icon: Icon(Icons.colorize_outlined, color: _textColor), 
               tooltip: 'More Fill Colors',
               onPressed: (_isSaving || _isSharing) ? null : () => _showAdvancedColorPicker(forStroke: false),
             )
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 10), 
         Row(children: [
           const Text('Font:'), const SizedBox(width: 10),
-          Expanded(
+          Expanded( 
             child: DropdownButton<String>(
               value: _fontFamily,
-              isExpanded: true,
-              items: <String>['Impact', 'Arial', 'Comic Sans MS', 'Roboto', 'Times New Roman']
+              isExpanded: true, 
+              items: <String>['Impact', 'Arial', 'Comic Sans MS', 'Roboto', 'Times New Roman'] 
                   .map<DropdownMenuItem<String>>((String value) => DropdownMenuItem<String>(value: value, child: Text(value, style: TextStyle(fontFamily: value))))
                   .toList(),
               onChanged: (_isSaving || _isSharing) ? null : (String? newValue) => setState(() => _fontFamily = newValue ?? _fontFamily),
             ),
           ),
         ]),
-
+        
         const Divider(height: 24, thickness: 1),
         Text("Text Outline Settings", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
@@ -748,7 +748,7 @@ Widget _buildEditingControls(BuildContext context) {
         ),
         if (_isTextStrokeEnabled) ...[
           const SizedBox(height: 8),
-          Row(children: [
+          Row(children: [ 
             const Text('Outline Width:'),
             Expanded(child: Slider(value: _textStrokeWidth, min: 0.5, max: 8.0, divisions: 15, label: _textStrokeWidth.toStringAsFixed(1), onChanged: (_isSaving || _isSharing) ? null : (double value) => setState(() => _textStrokeWidth = value))),
             Text(_textStrokeWidth.toStringAsFixed(1)),
@@ -762,23 +762,23 @@ Widget _buildEditingControls(BuildContext context) {
               _buildStrokeColorButton(Colors.white, context),
               _buildStrokeColorButton(Colors.redAccent.shade400, context),
               _buildStrokeColorButton(Colors.blueAccent.shade400, context),
-              IconButton(
-                icon: Icon(Icons.colorize_outlined, color: _textStrokeColor),
+              IconButton( 
+                icon: Icon(Icons.colorize_outlined, color: _textStrokeColor), 
                 tooltip: 'More Outline Colors',
                 onPressed: (_isSaving || _isSharing) ? null : () => _showAdvancedColorPicker(forStroke: true),
               )
             ],
           ),
         ],
-
-        const Divider(height: 24, thickness: 1),
+        
+        const Divider(height: 24, thickness: 1), 
         Text("Stickers & Overlays", style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         ElevatedButton.icon(
           icon: const Icon(Icons.sticky_note_2_outlined),
           label: const Text('Add Sticker'),
           style: ElevatedButton.styleFrom(
-            // backgroundColor: theme.colorScheme.secondary,
+            // backgroundColor: theme.colorScheme.secondary, 
             // foregroundColor: theme.colorScheme.onSecondary,
           ),
           onPressed: (_isSaving || _isSharing) ? null : _showStickerBrowser,

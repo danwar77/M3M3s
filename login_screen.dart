@@ -29,8 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  bool _isLoading = false;
-  bool _passwordVisible = false;
+  bool _isLoading = false; 
+  bool _passwordVisible = false; 
 
   @override
   void dispose() {
@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _performLogin() async {
-    if (_isLoading) return;
+    if (_isLoading) return; 
     final loc = AppLocalizations.of(context)!; // Added localization instance
 
     FocusScope.of(context).unfocus();
@@ -48,12 +48,12 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
-      final scaffoldMessenger = ScaffoldMessenger.of(context);
-
+      final scaffoldMessenger = ScaffoldMessenger.of(context); 
+      
       if (mounted) {
         setState(() => _isLoading = true);
       }
-      scaffoldMessenger.removeCurrentSnackBar();
+      scaffoldMessenger.removeCurrentSnackBar(); 
 
       try {
         // ignore: unused_local_variable
@@ -79,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
           } else if (e.message.toLowerCase().contains('email not confirmed')) {
             errorMessage = loc.loginFailedEmailNotConfirmedSnackbar;
           } else {
-            errorMessage = e.message;
+            errorMessage = e.message; 
           }
           scaffoldMessenger.showSnackBar(
             SnackBar(
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
           scaffoldMessenger.showSnackBar(
             SnackBar(
               // Assuming a generic error key might be good, or stick to e.toString()
-              content: Text('An unexpected error occurred: ${e.toString()}'),
+              content: Text('An unexpected error occurred: ${e.toString()}'), 
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
@@ -110,10 +110,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_isLoading) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SignUpScreen()),
+      MaterialPageRoute(builder: (context) => const SignUpScreen()), 
     );
   }
-
+  
   void _forgotPassword() {
     if (_isLoading) return;
     final loc = AppLocalizations.of(context)!; // Added localization instance
@@ -148,8 +148,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   Icon(
-                    Icons.auto_awesome_mosaic,
-                    size: 72,
+                    Icons.auto_awesome_mosaic, 
+                    size: 72, 
                     color: theme.colorScheme.primary,
                   ),
                   const SizedBox(height: 16),
@@ -262,7 +262,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(loc.dontHaveAccount, style: theme.textTheme.bodyMedium),
                       TextButton(
-                        onPressed: _isLoading ? null : _navigateToSignUp,
+                        onPressed: _isLoading ? null : _navigateToSignUp, 
                         child: Text(loc.signUpNowButton, style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.secondary)),
                       ),
                     ],

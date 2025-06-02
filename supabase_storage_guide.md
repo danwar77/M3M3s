@@ -203,8 +203,8 @@ Future<String?> uploadGeneratedMemeData(Uint8List memeData, String userId, Strin
       filePath,
       memeData,
       fileOptions: FileOptions(
-        cacheControl: '3600',
-        upsert: false,
+        cacheControl: '3600', 
+        upsert: false, 
         contentType: 'image/$imageExtension' // Important for correct display
       ),
     );

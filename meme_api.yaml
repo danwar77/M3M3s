@@ -272,7 +272,7 @@ components:
         text:
           type: object
           required:
-            - top
+            - top 
             - bottom
           properties:
             top:
@@ -348,7 +348,7 @@ components:
         isCustomImage:
           type: boolean
           example: false
-        customImageDetails:
+        customImageDetails: 
           type: object
           nullable: true
           properties:
@@ -379,7 +379,7 @@ components:
           example: "2023-10-27T15:00:00Z"
         accessUrl:
           type: string
-          format: uri
+          format: uri 
           description: URL to access this specific meme if needed.
           example: /api/v1/memes/saved_meme_uuid_78910
 
@@ -432,7 +432,7 @@ components:
               example: https://cdn.example.com/memes/generated_meme.jpg
             imageData:
               type: string
-              format: byte
+              format: byte 
               description: Base64 encoded string of the image (if format was "base64_image")
               example: base64_encoded_string_of_image
             textUsed:
@@ -489,7 +489,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Template'
-
+            
     PaginationInfo: # Updated to be more generic
       type: object
       properties:

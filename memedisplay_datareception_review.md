@@ -20,7 +20,7 @@ class MemeData {
     this.imageUrl,
     this.localImageFile,
     this.templateId,
-  }) : assert(imageUrl != null || localImageFile != null,
+  }) : assert(imageUrl != null || localImageFile != null, 
             'Either imageUrl or localImageFile must be provided for display.');
 }
 ```

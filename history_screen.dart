@@ -4,9 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 // Basic model for a Meme item.
 class MemeHistoryItem {
   final String id;
-  final String imageUrl;
-  final String? topText;
-  final String? bottomText;
+  final String imageUrl; 
+  final String? topText;  
+  final String? bottomText; 
   final DateTime createdAt;
 
   MemeHistoryItem({
@@ -27,7 +27,7 @@ class MemeHistoryItem {
     }
     return MemeHistoryItem(
       id: map['id'] as String,
-      imageUrl: map['image_url'] as String,
+      imageUrl: map['image_url'] as String, 
       topText: tText,
       bottomText: bText,
       createdAt: DateTime.parse(map['created_at'] as String),
@@ -384,8 +384,8 @@ Widget build(BuildContext context) {
                 ? Center(child: Padding(padding: const EdgeInsets.all(16.0), child: SizedBox(height: 24, width: 24, child:CircularProgressIndicator(strokeWidth: 2.5))))
                 : const SizedBox.shrink(); // Should not normally be visible if listener works correctly
           }
-
-          if (index >= _allHistoryMemes.length) {
+          
+          if (index >= _allHistoryMemes.length) { 
             // Should not happen if itemCount is correct, but as a safeguard
             return const SizedBox.shrink();
           }

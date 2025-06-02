@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added import
 
 // Placeholder LoginScreen for navigation from SignUpScreen
@@ -29,7 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _isLoading = false;
+  bool _isLoading = false; 
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
 
@@ -42,7 +42,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _performSignUp() async {
-    if (_isLoading) return;
+    if (_isLoading) return; 
     final loc = AppLocalizations.of(context)!; // Added localization instance
 
     FocusScope.of(context).unfocus();
@@ -51,7 +51,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
       final scaffoldMessenger = ScaffoldMessenger.of(context);
-
+      
       if (mounted) {
         setState(() => _isLoading = true);
       }
@@ -63,7 +63,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           password: password,
         );
 
-        if (mounted) {
+        if (mounted) { 
           if (response.user != null) {
             bool emailConfirmationRequired = response.session == null && (response.user?.emailConfirmedAt == null);
 
@@ -71,11 +71,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
               scaffoldMessenger.showSnackBar(
                 SnackBar(
                   content: Text(loc.signUpSuccessfulEmailConfirmationSnackbar),
-                  backgroundColor: Colors.orangeAccent.shade700,
-                  duration: const Duration(seconds: 6),
+                  backgroundColor: Colors.orangeAccent.shade700, 
+                  duration: const Duration(seconds: 6), 
                 ),
               );
-              Future.delayed(const Duration(seconds: 3), () {
+              Future.delayed(const Duration(seconds: 3), () { 
                 if(mounted) _navigateToLogin();
               });
             } else {
@@ -100,12 +100,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
       } on AuthException catch (e) {
         if (mounted) {
           String errorMessage = loc.signUpFailedSnackbar;
-           if (e.message.toLowerCase().contains('user already registered') ||
-               e.message.toLowerCase().contains('email address already registered')) {
+           if (e.message.toLowerCase().contains('user already registered') || 
+               e.message.toLowerCase().contains('email address already registered')) { 
             errorMessage = loc.signUpFailedUserExistsSnackbar;
           } else if (e.message.toLowerCase().contains('password should be at least 6 characters')) {
             errorMessage = loc.signUpFailedWeakPasswordSnackbar;
-          } else if (e.message.toLowerCase().contains('check your inbox for confirmation instructions')) {
+          } else if (e.message.toLowerCase().contains('check your inbox for confirmation instructions')) { 
              errorMessage = loc.signUpSuccessfulEmailConfirmationSnackbar;
              scaffoldMessenger.showSnackBar(
                 SnackBar(content: Text(errorMessage), backgroundColor: Colors.orangeAccent.shade700, duration: const Duration(seconds: 6)),
@@ -114,7 +114,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
              Future.delayed(const Duration(seconds: 3), () {
                 if(mounted) _navigateToLogin();
              });
-             return;
+             return; 
           }
           scaffoldMessenger.showSnackBar(
             SnackBar(
@@ -141,10 +141,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _navigateToLogin() {
-    if (_isLoading) return;
+    if (_isLoading) return; 
 
     if (Navigator.canPop(context)) {
-      Navigator.pop(context);
+      Navigator.pop(context); 
     } else {
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -178,7 +178,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   Icon(
-                    Icons.person_add_alt_1_outlined,
+                    Icons.person_add_alt_1_outlined, 
                     size: 72,
                     color: theme.colorScheme.primary,
                   ),
@@ -284,8 +284,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   _isLoading
                       ? const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
                       : ElevatedButton.icon(
-                          icon: const Icon(Icons.person_add_rounded),
-                          label: Text(loc.signUpButtonText),
+                          icon: const Icon(Icons.person_add_rounded), 
+                          label: Text(loc.signUpButtonText), 
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             textStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -302,7 +302,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     children: [
                       Text(loc.alreadyHaveAccount, style: theme.textTheme.bodyMedium),
                       TextButton(
-                        onPressed: _isLoading ? null : _navigateToLogin,
+                        onPressed: _isLoading ? null : _navigateToLogin, 
                         child: Text(loc.loginHereButton, style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.secondary)),
                       ),
                     ],

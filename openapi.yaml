@@ -450,7 +450,7 @@ components:
           type: string
           description: Text displayed on the bottom part of the meme. Can be empty.
           example: "And everything is consistent"
-      required:
+      required: 
         - top
         - bottom
 
@@ -459,13 +459,13 @@ components:
       type: object
       description: Request to generate a new meme.
       required:
-        - text
+        - text 
       properties:
-        text:
-          type: string
+        text: 
+          type: string 
           description: User's input phrase or primary text for the meme. Backend might split or use as is.
           example: "User's input phrase for the meme"
-        userId:
+        userId: 
           type: string
           description: Optional - User ID if generation is tied to a specific user account contextually. Often derived from auth token on backend.
           example: "user_id_from_auth"
@@ -502,7 +502,7 @@ components:
           properties:
             id:
               type: string
-              format: uuid
+              format: uuid 
               description: A unique ID for this generated meme instance (e.g., for caching or pre-save reference).
               example: "meme_guid_abc789-1234-5678-bEEF-generated"
             imageUrl:
@@ -510,15 +510,15 @@ components:
               format: url
               description: URL of the generated meme image (if 'url' format was requested).
               example: "https://cdn.example.com/memes/generated_meme.jpg"
-              nullable: true
-            imageData:
+              nullable: true 
+            imageData: 
               type: string
               format: byte
               description: Base64 encoded string of the meme image (if 'base64_image' format was requested).
-              example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQE..."
-              nullable: true
+              example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQE..." 
+              nullable: true 
             textUsed:
-              $ref: '#/components/schemas/MemeText'
+              $ref: '#/components/schemas/MemeText' 
             templateUsed:
               type: object
               description: Details of the template that was ultimately used for generation.
@@ -531,7 +531,7 @@ components:
                   type: string
                   description: Name of the template used.
                   example: "Drake Hotline Bling"
-              nullable: true
+              nullable: true 
             analysis:
               type: object
               description: Results of semantic analysis performed on the input text or generated meme.
@@ -572,7 +572,7 @@ components:
       type: object
       description: Request to save a meme to a user's account.
       required:
-        - imageUrl
+        - imageUrl 
         - text
         - isCustomImage
       properties:
@@ -596,7 +596,7 @@ components:
             if the client uploaded a custom image or an edited version.
           example: "https://cdn.example.com/memes/user_saved_meme_final.jpg"
         text:
-          $ref: '#/components/schemas/MemeText'
+          $ref: '#/components/schemas/MemeText' 
         templateId:
           type: string
           description: Optional - ID of the predefined template used, if any.
@@ -615,13 +615,13 @@ components:
               description: Original filename of the user-uploaded image.
               example: "my_holiday_photo.jpg"
               nullable: true
-            uploadedAt:
+            uploadedAt: 
               type: string
               format: date-time
               description: Timestamp when the custom image was uploaded/processed by the client or a separate upload step, in ISO 8601 format.
               example: "2023-10-27T14:30:00Z"
               nullable: true
-          nullable: true
+          nullable: true 
         tags:
           type: array
           items:
@@ -636,13 +636,13 @@ components:
           description: Visibility setting for the saved meme.
           example: private
 
-    SavedMemeResponse:
+    SavedMemeResponse: 
       type: object
       description: Represents a meme that has been saved by a user.
       properties:
         id:
           type: string
-          format: uuid
+          format: uuid 
           description: Unique ID for the saved meme resource in the backend.
           example: "saved_meme_uuid_78910-ABCD-EFGH-IJKL-saved"
         userId:
@@ -655,7 +655,7 @@ components:
           description: URL where the meme image is stored and can be accessed.
           example: "https://cdn.example.com/memes/user_saved_meme_final.jpg"
         text:
-          $ref: '#/components/schemas/MemeText'
+          $ref: '#/components/schemas/MemeText' 
         templateId:
           type: string
           description: ID of the predefined template used, if any.
@@ -665,7 +665,7 @@ components:
           type: boolean
           description: True if this meme was based on a user-uploaded image.
           example: false
-        customImageDetails:
+        customImageDetails: 
           type: object
           description: Details if it's a custom image.
           properties:
@@ -702,9 +702,9 @@ components:
           format: date-time
           description: Timestamp when the meme was last updated, in ISO 8601 format.
           example: "2023-10-27T15:00:00Z"
-        accessUrl:
+        accessUrl: 
           type: string
-          format: uri
+          format: uri 
           description: A direct URL or path to access or share this specific meme.
           example: "/memes/view/saved_meme_uuid_78910"
           nullable: true
@@ -766,7 +766,7 @@ components:
           description: A score indicating the template's popularity (higher is more popular).
           example: 950
           nullable: true
-        createdAt:
+        createdAt: 
           type: string
           format: date-time
           description: Timestamp when the template was created or added to the system, in ISO 8601 format.
@@ -812,7 +812,7 @@ components:
           example: 5
         totalItems:
           type: integer
-          format: int64
+          format: int64 
           description: The total number of items available across all pages.
           example: 98
         limit:
@@ -821,19 +821,19 @@ components:
           description: The number of items requested per page (as specified in the request).
           example: 20
         prevPage:
-          type: integer
+          type: integer 
           format: int32
           description: The previous page number, if available (null if current page is the first).
           example: 1
           nullable: true
         nextPage:
-          type: integer
+          type: integer 
           format: int32
           description: The next page number, if available (null if current page is the last).
           example: 2
           nullable: true
 
-    ErrorDetail:
+    ErrorDetail: 
       type: object
       description: Provides details about a specific error, often related to a single field.
       properties:
@@ -846,19 +846,19 @@ components:
           type: string
           description: A short description of the issue with the field.
           example: "Cannot be empty"
-        value:
-          type: string
+        value: 
+          type: string 
           description: The value that caused the error (use with caution for sensitive data).
           example: ""
           nullable: true
-        location:
+        location: 
           type: string
           enum: [body, query, path, header]
           description: The location of the parameter that caused the error.
           example: body
           nullable: true
 
-    ErrorResponse:
+    ErrorResponse: 
       type: object
       description: Generic error response structure used for all API errors.
       required:
@@ -873,12 +873,12 @@ components:
             code:
               type: string
               description: A machine-readable error code specific to this error type (e.g., INVALID_INPUT, UNAUTHENTICATED, FORBIDDEN, RESOURCE_NOT_FOUND, INTERNAL_SERVER_ERROR).
-              example: "INVALID_INPUT"
+              example: "INVALID_INPUT" 
             message:
               type: string
               description: A human-readable message providing more details about the error.
               example: "Required field 'text' is missing or invalid."
-            target:
+            target: 
               type: string
               description: Indicates the specific target or source of the error, if applicable (e.g., a field name or a service).
               example: "MemeGenerationRequest.text"
@@ -889,13 +889,13 @@ components:
                 $ref: '#/components/schemas/ErrorDetail'
               description: Optional - An array of more specific error details, e.g., for field validation errors.
               nullable: true
-            traceId:
+            traceId: 
               type: string
               format: uuid
               description: A unique identifier for this error instance, useful for logging, debugging, and support.
               example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
               nullable: true
-tags:
+tags: 
   - name: Authentication
     description: User authentication and profile management operations.
   - name: Memes

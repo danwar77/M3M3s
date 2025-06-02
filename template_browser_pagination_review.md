@@ -14,11 +14,11 @@ This document reviews the implementation of the paginated template browser withi
         if ((_allFetchedTemplates.isEmpty && !_isLoadingInitialTemplates) || _fetchTemplatesError != null) {
             if (mounted) {
                 setState(() {
-                    _fetchTemplatesError = null;
-                    _hasMoreTemplates = true;
+                    _fetchTemplatesError = null; 
+                    _hasMoreTemplates = true;    
                 });
             }
-            _fetchTemplates(isInitialFetch: true);
+            _fetchTemplates(isInitialFetch: true); 
         }
         ```
         This correctly triggers an initial fetch if the list is empty and not already loading, OR if a previous error occurred. It resets `_fetchTemplatesError` and `_hasMoreTemplates` before the fetch.

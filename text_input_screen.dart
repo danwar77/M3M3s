@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'template_list_item.dart'; // Import TemplateListItem and TemplateInfo
 import 'meme_display_screen.dart'; // Import MemeDisplayScreen and MemeData
 import 'suggested_template_item.dart'; // Import SuggestedTemplateItem
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
+import 'dart:io'; 
+import 'package:image_picker/image_picker.dart'; 
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added import
 
 class TextInputScreen extends StatefulWidget {
@@ -19,38 +19,38 @@ class _TextInputScreenState extends State<TextInputScreen> {
   final _topTextController = TextEditingController();
   final _bottomTextController = TextEditingController();
 
-  String? _selectedTemplateId;
-  String? _selectedTemplateName;
-  String? _selectedTemplateImageUrl;
-  File? _customImageFile;
+  String? _selectedTemplateId; 
+  String? _selectedTemplateName; 
+  String? _selectedTemplateImageUrl; 
+  File? _customImageFile; 
 
-  bool _isProcessing = false;
-  bool _isFetchingSuggestionDetails = false;
+  bool _isProcessing = false; 
+  bool _isFetchingSuggestionDetails = false; 
   Map<String, dynamic>? _suggestionResults;
 
-  final ImagePicker _picker = ImagePicker();
+  final ImagePicker _picker = ImagePicker(); 
 
   List<TemplateInfo> _allFetchedTemplates = [];
-  int _templatesCurrentPage = 0;
-  final int _templatesPageSize = 20;
-  static const double _templateScrollOffsetThreshold = 200.0;
-  bool _isLoadingInitialTemplates = false;
-  bool _isLoadingMoreTemplates = false;
-  bool _hasMoreTemplates = true;
-  Object? _fetchTemplatesError;
+  int _templatesCurrentPage = 0; 
+  final int _templatesPageSize = 20; 
+  static const double _templateScrollOffsetThreshold = 200.0; 
+  bool _isLoadingInitialTemplates = false; 
+  bool _isLoadingMoreTemplates = false;  
+  bool _hasMoreTemplates = true;         
+  Object? _fetchTemplatesError;        
   final ScrollController _templateScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _templateScrollController.addListener(() {
-      if (_templateScrollController.position.pixels >=
-          _templateScrollController.position.maxScrollExtent - _templateScrollOffsetThreshold &&
+      if (_templateScrollController.position.pixels >= 
+          _templateScrollController.position.maxScrollExtent - _templateScrollOffsetThreshold && 
           _hasMoreTemplates &&
-          !_isLoadingMoreTemplates &&
-          !_isLoadingInitialTemplates &&
-          _fetchTemplatesError == null) {
-        _fetchTemplates(isInitialFetch: false);
+          !_isLoadingMoreTemplates && 
+          !_isLoadingInitialTemplates && 
+          _fetchTemplatesError == null) { 
+        _fetchTemplates(isInitialFetch: false); 
       }
     });
   }
@@ -59,14 +59,14 @@ class _TextInputScreenState extends State<TextInputScreen> {
   void dispose() {
     _topTextController.dispose();
     _bottomTextController.dispose();
-    _templateScrollController.dispose();
+    _templateScrollController.dispose(); 
     super.dispose();
   }
 
   Future<void> _fetchTemplates({bool isInitialFetch = false}) async {
     if (!mounted) return;
     final loc = AppLocalizations.of(context)!;
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context); 
 
     if (isInitialFetch && _isLoadingInitialTemplates) return;
     if (!isInitialFetch && _isLoadingMoreTemplates) return;
@@ -75,10 +75,10 @@ class _TextInputScreenState extends State<TextInputScreen> {
     setState(() {
       if (isInitialFetch) {
         _isLoadingInitialTemplates = true;
-        _fetchTemplatesError = null;
-        _templatesCurrentPage = 0;
-        _allFetchedTemplates.clear();
-        _hasMoreTemplates = true;
+        _fetchTemplatesError = null; 
+        _templatesCurrentPage = 0; 
+        _allFetchedTemplates.clear(); 
+        _hasMoreTemplates = true; 
       } else {
         _isLoadingMoreTemplates = true;
       }
@@ -88,11 +88,11 @@ class _TextInputScreenState extends State<TextInputScreen> {
       final offset = _templatesCurrentPage * _templatesPageSize;
       final response = await Supabase.instance.client
           .from('templates')
-          .select('id, name, image_url, thumbnail_url, tags')
-          .order('name', ascending: true)
+          .select('id, name, image_url, thumbnail_url, tags') 
+          .order('name', ascending: true) 
           .range(offset, offset + _templatesPageSize - 1);
 
-      final List<dynamic> fetchedData = response;
+      final List<dynamic> fetchedData = response; 
       final List<TemplateInfo> newTemplates = fetchedData
           .map((item) => TemplateInfo.fromMap(item as Map<String, dynamic>))
           .toList();
@@ -100,32 +100,32 @@ class _TextInputScreenState extends State<TextInputScreen> {
       if (mounted) {
         setState(() {
           _allFetchedTemplates.addAll(newTemplates);
-          _templatesCurrentPage++;
+          _templatesCurrentPage++; 
           if (newTemplates.length < _templatesPageSize) {
-            _hasMoreTemplates = false;
+            _hasMoreTemplates = false; 
           }
-          _fetchTemplatesError = null;
+          _fetchTemplatesError = null; 
         });
       }
     } on PostgrestException catch (error) {
       if (mounted) {
         setState(() {
           _fetchTemplatesError = error;
-          _hasMoreTemplates = false;
+          _hasMoreTemplates = false; 
         });
-        if (!isInitialFetch && _allFetchedTemplates.isNotEmpty) {
+        if (!isInitialFetch && _allFetchedTemplates.isNotEmpty) { 
           scaffoldMessenger.removeCurrentSnackBar();
           scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Text(loc.errorLoadingTemplateDetailsSnackbar('', error.message)), // Using a generic form
               backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 5),
+              duration: const Duration(seconds: 5), 
               action: SnackBarAction(
                 label: loc.retryButton,
                 textColor: Theme.of(context).colorScheme.onError,
                 onPressed: () {
-                  if (mounted && !_isLoadingMoreTemplates && _hasMoreTemplates) {
-                    _fetchTemplates();
+                  if (mounted && !_isLoadingMoreTemplates && _hasMoreTemplates) { 
+                    _fetchTemplates(); 
                   }
                 },
               ),
@@ -137,21 +137,21 @@ class _TextInputScreenState extends State<TextInputScreen> {
       if (mounted) {
         setState(() {
           _fetchTemplatesError = e;
-          _hasMoreTemplates = false;
+          _hasMoreTemplates = false; 
         });
         if (!isInitialFetch && _allFetchedTemplates.isNotEmpty) {
           scaffoldMessenger.removeCurrentSnackBar();
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: Text(loc.errorLoadingTemplates),
+              content: Text(loc.errorLoadingTemplates), 
               backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 5),
+              duration: const Duration(seconds: 5), 
               action: SnackBarAction(
                 label: loc.retryButton,
                 textColor: Theme.of(context).colorScheme.onError,
                 onPressed: () {
-                  if (mounted && !_isLoadingMoreTemplates && _hasMoreTemplates) {
-                    _fetchTemplates();
+                  if (mounted && !_isLoadingMoreTemplates && _hasMoreTemplates) { 
+                    _fetchTemplates(); 
                   }
                 },
               ),
@@ -168,7 +168,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
       }
     }
   }
-
+  
   Future<void> _pickImage(ImageSource source) async {
     if (!mounted) return;
     final loc = AppLocalizations.of(context)!;
@@ -181,7 +181,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
           setState(() {
             _customImageFile = File(pickedFile.path);
             _selectedTemplateId = null; _selectedTemplateName = null; _selectedTemplateImageUrl = null;
-            _suggestionResults = null;
+            _suggestionResults = null; 
           });
           scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.customImageSelectedSnackbar), backgroundColor: Colors.green.shade700));
         }
@@ -193,7 +193,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
     }
   }
 
-  void _showImageSourceSelection() {
+  void _showImageSourceSelection() { 
     //  final loc = AppLocalizations.of(context)!; // For 'Photo Library' & 'Camera' if localized
      showModalBottomSheet(context: context, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))), builder: (BuildContext bc) {
       return SafeArea(child: Wrap(children: <Widget>[
@@ -202,12 +202,12 @@ class _TextInputScreenState extends State<TextInputScreen> {
       ]));
     });
   }
-
-  Future<void> _processMeme() async {
+  
+  Future<void> _processMeme() async { 
     final loc = AppLocalizations.of(context)!;
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    FocusScope.of(context).unfocus();
+    final scaffoldMessenger = ScaffoldMessenger.of(context); 
+    final navigator = Navigator.of(context); 
+    FocusScope.of(context).unfocus(); 
     if (!_formKey.currentState!.validate()) return;
     if (_customImageFile == null && (_selectedTemplateId == null || _selectedTemplateImageUrl == null)) {
       scaffoldMessenger.removeCurrentSnackBar();
@@ -215,7 +215,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
       return;
     }
     if(mounted) setState(() => _isProcessing = true);
-    _suggestionResults = null;
+    _suggestionResults = null; 
     final topText = _topTextController.text.trim();
     final bottomText = _bottomTextController.text.trim();
     final primaryTextForSuggestions = (topText.isNotEmpty ? topText : (bottomText.isNotEmpty ? bottomText : "funny meme"));
@@ -238,48 +238,48 @@ class _TextInputScreenState extends State<TextInputScreen> {
       if (mounted) { setState(() => _isProcessing = false); scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(backgroundColor: Theme.of(context).colorScheme.error, content: Text(loc.appTitle + ' Suggestion Error: ${error.message}'))); } // Placeholder
     } catch (e) {
       if (mounted) { setState(() => _isProcessing = false); scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(backgroundColor: Theme.of(context).colorScheme.error, content: Text(loc.appTitle + ' An unexpected error occurred: ${e.toString()}'))); } // Placeholder
-    }
+    } 
   }
 
-  void _selectTemplate() {
+  void _selectTemplate() { 
     final loc = AppLocalizations.of(context)!;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     if ((_allFetchedTemplates.isEmpty && !_isLoadingInitialTemplates) || _fetchTemplatesError != null) {
         if (mounted) {
             setState(() { _fetchTemplatesError = null; _hasMoreTemplates = true; });
         }
-        _fetchTemplates(isInitialFetch: true);
+        _fetchTemplates(isInitialFetch: true); 
     }
     showModalBottomSheet<TemplateInfo>(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (BuildContext bc) {
-      return Builder(builder: (context) {
-        final modalLoc = AppLocalizations.of(context)!;
+      return Builder(builder: (context) { 
+        final modalLoc = AppLocalizations.of(context)!; 
         final theme = Theme.of(context);
-        return DraggableScrollableSheet(initialChildSize: 0.7, minChildSize: 0.4, maxChildSize: 0.9, expand: false,
-          builder: (_, scrollControllerForSheet) {
+        return DraggableScrollableSheet(initialChildSize: 0.7, minChildSize: 0.4, maxChildSize: 0.9, expand: false, 
+          builder: (_, scrollControllerForSheet) { 
             return Container(decoration: BoxDecoration(color: theme.canvasColor, borderRadius: const BorderRadius.only(topLeft: Radius.circular(16.0), topRight: Radius.circular(16.0))),
               child: Column(children: [
                 Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(10)))),
                 Padding(padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 10.0), child: Text(modalLoc.selectTemplateTitle, style: theme.textTheme.titleLarge)),
                 const Divider(height: 1, thickness: 0.5),
-                Expanded(child: Builder(builder: (context) {
+                Expanded(child: Builder(builder: (context) { 
                   if (_isLoadingInitialTemplates && _allFetchedTemplates.isEmpty) return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const CircularProgressIndicator(), const SizedBox(height: 20), Text(modalLoc.loadingTemplates, style: theme.textTheme.bodyMedium)])));
                   if (_fetchTemplatesError != null && _allFetchedTemplates.isEmpty) return Center(child: Padding(padding: const EdgeInsets.all(20.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.error_outline_rounded, color: theme.colorScheme.error, size: 48), const SizedBox(height: 16), Text(modalLoc.errorLoadingTemplates.split('.').first, textAlign: TextAlign.center, style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.error)), const SizedBox(height: 8), Text(_fetchTemplatesError.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error.withOpacity(0.8))), const SizedBox(height: 20), ElevatedButton.icon(icon: const Icon(Icons.refresh_rounded), label: Text(modalLoc.retryButton), onPressed: () => _fetchTemplates(isInitialFetch: true), style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.errorContainer, foregroundColor: theme.colorScheme.onErrorContainer))])));
                   if (_allFetchedTemplates.isEmpty && !_hasMoreTemplates && !_isLoadingInitialTemplates) return Center(child: Padding(padding: const EdgeInsets.all(20.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.collections_bookmark_outlined, color: Colors.grey[500], size: 48), const SizedBox(height: 16), Text(modalLoc.noTemplatesFound.split('\n').first, style: theme.textTheme.titleMedium?.copyWith(color: Colors.grey[700])), const SizedBox(height: 8), Text(modalLoc.noTemplatesFound.split('\n').last, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])), const SizedBox(height: 20), ElevatedButton.icon(icon: const Icon(Icons.refresh_rounded), label: Text(modalLoc.refreshButton), onPressed: () => _fetchTemplates(isInitialFetch: true))])));
                   final crossAxisCount = MediaQuery.of(context).size.width > 600 ? 4 : 3;
                   return GridView.builder(controller: _templateScrollController, padding: const EdgeInsets.all(12.0), gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: crossAxisCount, crossAxisSpacing: 10.0, mainAxisSpacing: 10.0, childAspectRatio: 0.8), itemCount: _allFetchedTemplates.length + (_hasMoreTemplates && _allFetchedTemplates.isNotEmpty ? 1 : 0),
                     itemBuilder: (BuildContext context, int index) {
-                      if (index == _allFetchedTemplates.length) return _isLoadingMoreTemplates ? Center(child: Padding(padding: const EdgeInsets.all(16.0), child: SizedBox(height: 24, width: 24, child:CircularProgressIndicator(strokeWidth: 2.5)))) : const SizedBox.shrink();
-                      final tpl = _allFetchedTemplates[index]; return TemplateListItem(template: tpl, onTap: () => Navigator.pop(context, tpl));
+                      if (index == _allFetchedTemplates.length) return _isLoadingMoreTemplates ? Center(child: Padding(padding: const EdgeInsets.all(16.0), child: SizedBox(height: 24, width: 24, child:CircularProgressIndicator(strokeWidth: 2.5)))) : const SizedBox.shrink(); 
+                      final tpl = _allFetchedTemplates[index]; return TemplateListItem(template: tpl, onTap: () => Navigator.pop(context, tpl)); 
                     });
                 }))])
             );
         });
       });
-    }).then((selectedTemplate) {
-      if (selectedTemplate != null && mounted) {
+    }).then((selectedTemplate) { 
+      if (selectedTemplate != null && mounted) { 
         setState(() {
-          _selectedTemplateId = selectedTemplate.id; _selectedTemplateName = selectedTemplate.name; _selectedTemplateImageUrl = selectedTemplate.imageUrl;
-          _customImageFile = null; _suggestionResults = null;
+          _selectedTemplateId = selectedTemplate.id; _selectedTemplateName = selectedTemplate.name; _selectedTemplateImageUrl = selectedTemplate.imageUrl; 
+          _customImageFile = null; _suggestionResults = null; 
         });
         scaffoldMessenger.removeCurrentSnackBar();
         scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.templateSelectedSnackbar(selectedTemplate.name ?? 'Template')), duration: const Duration(seconds: 2), backgroundColor: Colors.green.shade700, behavior: SnackBarBehavior.floating));
@@ -291,13 +291,13 @@ class _TextInputScreenState extends State<TextInputScreen> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final loc = AppLocalizations.of(context)!;
-    const double previewAreaHeight = 200.0;
+    const double previewAreaHeight = 200.0; 
     Widget content;
-    String titleText = loc.noImageSelectedSnackbar;
+    String titleText = loc.noImageSelectedSnackbar; 
     String subtitleText = loc.appTitle; // Placeholder: "Tap card or use buttons below."
 
     if (_customImageFile != null) {
-      titleText = "Custom Image";
+      titleText = "Custom Image"; 
       subtitleText = "Tap card to change or remove.";
       content = Stack(alignment: Alignment.center, children: [
         ClipRRect(borderRadius: BorderRadius.circular(8.0), child: Image.file(_customImageFile!, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.error_outline_rounded, color: Colors.red, size: 40)))),
@@ -305,14 +305,14 @@ class _TextInputScreenState extends State<TextInputScreen> {
       ]);
     } else if (_selectedTemplateImageUrl != null) {
       titleText = _selectedTemplateName ?? _selectedTemplateId!;
-      subtitleText = "(Tap card to change template)";
+      subtitleText = "(Tap card to change template)"; 
       content = ClipRRect(borderRadius: BorderRadius.circular(8.0), child: Image.network(_selectedTemplateImageUrl!, fit: BoxFit.contain, loadingBuilder: (context, child, loadingProgress) { if (loadingProgress == null) return child; return Center(child: CircularProgressIndicator(strokeWidth: 2.0, value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : null)); }, errorBuilder: (context, error, stackTrace) { return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.error_outline_rounded, color: theme.colorScheme.error, size: 40), const SizedBox(height: 4), Text(loc.appTitle + " Preview Error", style: TextStyle(color: theme.colorScheme.error, fontSize: 12))])); })); // Placeholder
     } else {
       content = Column(mainAxisAlignment: MainAxisAlignment.center, children: [ Icon(Icons.photo_library_outlined, size: 60, color: Colors.grey[400]), const SizedBox(height: 12), Text(titleText, style: theme.textTheme.titleMedium?.copyWith(color: Colors.grey[700])), const SizedBox(height: 4), Text(subtitleText, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]), textAlign: TextAlign.center) ]);
     }
     return Card(elevation: _customImageFile != null || _selectedTemplateImageUrl != null ? 2.0 : 1.0, color: _customImageFile != null || _selectedTemplateImageUrl != null ? colorScheme.surface : Colors.grey[100], shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), clipBehavior: Clip.antiAlias,
       child: InkWell(onTap: () { if (_customImageFile != null) { _showImageSourceSelection(); } else { _selectTemplate(); }},
-        child: Container(height: previewAreaHeight, width: double.infinity, padding: const EdgeInsets.all(8.0),
+        child: Container(height: previewAreaHeight, width: double.infinity, padding: const EdgeInsets.all(8.0), 
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Expanded(child: Center(child: content)),
             if (_customImageFile != null || _selectedTemplateImageUrl != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Text(titleText, style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis)),
@@ -327,7 +327,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
     final analyzedText = suggestions['analyzedText'] as Map<String, dynamic>?;
     final List<dynamic>? suggestedTemplatesDynamic = suggestions['suggestedTemplates'] as List<dynamic>?;
     final List<Map<String, dynamic>> suggestedTemplatesData = (suggestedTemplatesDynamic ?? []).map((item) => item as Map<String, dynamic>).toList();
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context); 
     return Card(elevation: 2.0, margin: const EdgeInsets.symmetric(vertical: 16.0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       child: Padding(padding: const EdgeInsets.all(16.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(loc.appTitle + " - AI Suggestions", style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w600)), // Placeholder
@@ -342,23 +342,23 @@ class _TextInputScreenState extends State<TextInputScreen> {
         if (suggestedTemplatesData.isNotEmpty) ...[
           const Divider(height: 20.0, thickness: 0.5),
           Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(loc.appTitle + " Suggested Templates:", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600))), // Placeholder
-          Column(children: suggestedTemplatesData.take(3).map((suggestionMap) {
+          Column(children: suggestedTemplatesData.take(3).map((suggestionMap) { 
             final String? suggestedTemplateId = suggestionMap['templateId'] as String? ?? suggestionMap['id'] as String?; final String? suggestedTemplateName = suggestionMap['name'] as String?; final String? suggestedImageUrl = suggestionMap['imageUrl'] as String? ?? suggestionMap['thumbnailUrl'] as String?;
-            if (suggestedTemplateId == null || suggestedTemplateName == null || suggestedImageUrl == null) return const SizedBox.shrink();
-            return Padding(padding: const EdgeInsets.only(bottom: 4.0), child: SuggestedTemplateItem(suggestionData: suggestionMap, onTap: () async {
-              if (_isFetchingSuggestionDetails || !mounted) return;
+            if (suggestedTemplateId == null || suggestedTemplateName == null || suggestedImageUrl == null) return const SizedBox.shrink(); 
+            return Padding(padding: const EdgeInsets.only(bottom: 4.0), child: SuggestedTemplateItem(suggestionData: suggestionMap, onTap: () async { 
+              if (_isFetchingSuggestionDetails || !mounted) return; 
               setState(() => _isFetchingSuggestionDetails = true); scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.loadingSuggestionDetailsSnackbar(suggestedTemplateName)), duration: const Duration(seconds: 2), backgroundColor: Colors.blueGrey.shade700));
               try {
-                final String mainImageUrl = suggestedImageUrl;
+                final String mainImageUrl = suggestedImageUrl; 
                 if (mounted) {
                   setState(() { _selectedTemplateId = suggestedTemplateId; _selectedTemplateName = suggestedTemplateName; _selectedTemplateImageUrl = mainImageUrl; _customImageFile = null; _suggestionResults = null; });
                   scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.templateSelectedSnackbar(suggestedTemplateName)), backgroundColor: Colors.green.shade700, duration: const Duration(seconds: 2)));
                 }
-              } catch (e) {
+              } catch (e) { 
                 if (mounted) { scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.errorLoadingTemplateDetailsSnackbar(suggestedTemplateName, e.toString())), backgroundColor: Theme.of(context).colorScheme.error)); }
               } finally { if (mounted) setState(() => _isFetchingSuggestionDetails = false); }
             }));
-          }).toList())]
+          }).toList())] 
         else if (analyzedText != null) ...[ const Divider(height: 20.0, thickness: 0.5), Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(loc.appTitle + " No specific template suggestions.", style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)))] // Placeholder
       ]))));
   }
@@ -366,7 +366,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final ColorScheme colorScheme = theme.colorScheme;    
     final loc = AppLocalizations.of(context)!;
     bool canProcessMeme = !_isProcessing && !_isFetchingSuggestionDetails && (_selectedTemplateImageUrl != null || _customImageFile != null) ;
 
@@ -376,7 +376,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
         child: Form(key: _formKey, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: <Widget>[
           Text(loc.appTitle + " - Choose Base Image", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.primary)), // Placeholder
           const SizedBox(height: 12),
-          _buildPreviewCard(context),
+          _buildPreviewCard(context), 
           const SizedBox(height: 10),
           Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
             TextButton.icon(icon: const Icon(Icons.photo_library_outlined, size: 20), label: Text(loc.chooseTemplateButton), onPressed: (_isProcessing || _isFetchingSuggestionDetails) ? null : _selectTemplate, style: TextButton.styleFrom(foregroundColor: colorScheme.secondary)),
@@ -386,7 +386,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
           const SizedBox(height: 16),
           TextFormField(controller: _topTextController, decoration: InputDecoration(labelText: loc.topTextLabel, hintText: loc.topTextLabel.split(' ').first + " text here", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), prefixIcon: const Icon(Icons.align_vertical_top_rounded), filled: false), maxLength: 120, minLines: 1, maxLines: 3, enabled: !_isProcessing && !_isFetchingSuggestionDetails),
           const SizedBox(height: 20),
-          TextFormField(controller: _bottomTextController, decoration: InputDecoration(labelText: loc.bottomTextLabel, hintText: loc.bottomTextLabel.split(' ').first + " text here", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), prefixIcon: const Icon(Icons.align_vertical_bottom_rounded), filled: false), maxLength: 120, minLines: 1, maxLines: 3, enabled: !_isProcessing && !_isFetchingSuggestionDetails,
+          TextFormField(controller: _bottomTextController, decoration: InputDecoration(labelText: loc.bottomTextLabel, hintText: loc.bottomTextLabel.split(' ').first + " text here", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), prefixIcon: const Icon(Icons.align_vertical_bottom_rounded), filled: false), maxLength: 120, minLines: 1, maxLines: 3, enabled: !_isProcessing && !_isFetchingSuggestionDetails, 
             validator: (value) { if ((value == null || value.trim().isEmpty) && (_topTextController.text.trim().isEmpty)) return loc.appTitle + " - Enter some text"; return null; }), // Placeholder
           const SizedBox(height: 32),
           if (_isProcessing || _isFetchingSuggestionDetails) const Center(child: Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator()))

@@ -121,7 +121,7 @@ Future<String?> signUpUser({required String email, required String password}) as
       email: email,
       password: password,
       // Optional: You can add user metadata here
-      // data: {'username': 'my_username'},
+      // data: {'username': 'my_username'}, 
     );
     if (response.user != null) {
       // Check if email confirmation is required
@@ -315,7 +315,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, username, app_preferences) -- Added app_preferences
   VALUES (
-    NEW.id,
+    NEW.id, 
     COALESCE(NEW.raw_user_meta_data->>'username', NEW.email), -- Use username from metadata if available, else email
     '{"theme": "system", "notifications_enabled": true}'::jsonb -- Example default preferences
   );

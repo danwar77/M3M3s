@@ -17,7 +17,7 @@ To verify that the text rendering logic in `_buildMemePreview()` (specifically w
           fontFamily: _fontFamily,
           fontSize: _fontSize,
           color: _textColor, // User-selected fill color
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.bold, 
         );
         ```
 
@@ -42,7 +42,7 @@ To verify that the text rendering logic in `_buildMemePreview()` (specifically w
         *   **Finding:** Yes. The "Select Color" button's `onPressed` callback in the `AlertDialog` shown by `_showAdvancedColorPicker` correctly calls `setState()` to update either `_textColor` or `_textStrokeColor` with the `pickerColor` chosen by the user.
         ```dart
         onPressed: () {
-          if (mounted) {
+          if (mounted) { 
             setState(() {
               if (forStroke) {
                 _textStrokeColor = pickerColor;
@@ -51,7 +51,7 @@ To verify that the text rendering logic in `_buildMemePreview()` (specifically w
               }
             });
           }
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(); 
         },
         ```
 

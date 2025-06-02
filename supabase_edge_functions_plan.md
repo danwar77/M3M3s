@@ -56,15 +56,15 @@ We propose the following Edge Functions to encapsulate the custom logic:
         "language": "en" // from NLP service
       },
       "suggestedTemplates": [ // Query results from 'templates' table based on keywords/tone
-        {
-          "templateId": "uuid-template-1",
-          "name": "Drake Hotline Bling",
+        { 
+          "templateId": "uuid-template-1", 
+          "name": "Drake Hotline Bling", 
           "imageUrl": "url/to/template1.jpg",
           "matchScore": 0.85 // Calculated relevance score
         },
-        {
-          "templateId": "uuid-template-2",
-          "name": "Distracted Boyfriend",
+        { 
+          "templateId": "uuid-template-2", 
+          "name": "Distracted Boyfriend", 
           "imageUrl": "url/to/template2.jpg",
           "matchScore": 0.72
         }
