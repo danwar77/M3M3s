@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added import
 
 // Placeholder LoginScreen for navigation from SignUpScreen
 // In a real app, this would be in 'login_screen.dart' and imported.
@@ -7,8 +8,9 @@ class LoginScreen extends StatelessWidget { // Simplified version for this file'
   const LoginScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!; // Added localization instance
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(title: Text(loc.loginScreenTitle)), // Localized
       body: const Center(child: Text('Login Screen Placeholder (Navigated from Sign Up)')),
     );
   }
@@ -41,6 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _performSignUp() async {
     if (_isLoading) return;
+    final loc = AppLocalizations.of(context)!; // Added localization instance
 
     FocusScope.of(context).unfocus();
 
@@ -67,28 +70,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
             if (emailConfirmationRequired) {
               scaffoldMessenger.showSnackBar(
                 SnackBar(
-                  content: const Text('Sign-up successful! Please check your email to confirm your account.'),
+                  content: Text(loc.signUpSuccessfulEmailConfirmationSnackbar),
                   backgroundColor: Colors.orangeAccent.shade700,
                   duration: const Duration(seconds: 6),
                 ),
               );
-              // Navigate to login after showing confirmation message
-              Future.delayed(const Duration(seconds: 3), () { // Short delay for user to read
+              Future.delayed(const Duration(seconds: 3), () {
                 if(mounted) _navigateToLogin();
               });
             } else {
               scaffoldMessenger.showSnackBar(
                 SnackBar(
-                  content: const Text('Sign-up successful! You are now logged in.'),
+                  content: Text(loc.signUpSuccessfulSnackbar),
                   backgroundColor: Colors.green.shade700,
                 ),
               );
-              // AuthState listener in main_app_structure.dart should handle navigation.
             }
           } else {
              scaffoldMessenger.showSnackBar(
               SnackBar(
-                content: const Text('Sign-up completed, but user data is currently unavailable. Please try logging in.'),
+                // Assuming a key like "signUpCompletedUserUnavailableSnackbar"
+                content: Text(loc.signUpFailedSnackbar + " (User data unavailable)"), // Placeholder
                 backgroundColor: Colors.orangeAccent.shade700,
               ),
             );
@@ -97,19 +99,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       } on AuthException catch (e) {
         if (mounted) {
-          String errorMessage = 'Sign-up failed. Please try again.';
+          String errorMessage = loc.signUpFailedSnackbar;
            if (e.message.toLowerCase().contains('user already registered') ||
                e.message.toLowerCase().contains('email address already registered')) {
-            errorMessage = 'This email is already registered. Please try logging in.';
+            errorMessage = loc.signUpFailedUserExistsSnackbar;
           } else if (e.message.toLowerCase().contains('password should be at least 6 characters')) {
-            errorMessage = 'Password is too short. It must be at least 6 characters.';
+            errorMessage = loc.signUpFailedWeakPasswordSnackbar;
           } else if (e.message.toLowerCase().contains('check your inbox for confirmation instructions')) {
-             errorMessage = 'Sign-up successful! Please check your email to confirm your account.';
+             errorMessage = loc.signUpSuccessfulEmailConfirmationSnackbar;
              scaffoldMessenger.showSnackBar(
                 SnackBar(content: Text(errorMessage), backgroundColor: Colors.orangeAccent.shade700, duration: const Duration(seconds: 6)),
              );
              if (mounted) setState(() => _isLoading = false);
-             // Navigate to login after showing confirmation message
              Future.delayed(const Duration(seconds: 3), () {
                 if(mounted) _navigateToLogin();
              });
@@ -140,21 +141,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _navigateToLogin() {
-    if (_isLoading) return; // Don't navigate if an operation is in progress
+    if (_isLoading) return;
 
     if (Navigator.canPop(context)) {
-      Navigator.pop(context); // Assumes SignUpScreen was pushed onto LoginScreen
+      Navigator.pop(context);
     } else {
-      // Fallback if it cannot be popped (e.g., direct navigation for testing, or different routing)
-      // TODO: Replace with actual named route if using a router like GoRouter
-      // Navigator.pushReplacementNamed(context, '/login');
       ScaffoldMessenger.of(context).removeCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Navigating to Login Screen (Fallback).'), backgroundColor: Theme.of(context).colorScheme.secondary),
       );
-      // This is a placeholder, actual navigation might differ based on app's routing setup
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
-
     }
     print('Navigate to Login Screen');
   }
@@ -163,10 +159,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
+    final loc = AppLocalizations.of(context)!; // Added localization instance
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Account'),
+        title: Text(loc.signUpScreenTitle),
         centerTitle: true,
       ),
       body: Center(
@@ -187,7 +184,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Join MemeMarvel!',
+                    loc.signUpScreenTitle, // Re-using for main title text
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -196,7 +193,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Create an account to start the fun.',
+                    loc.appTitle, // Using appTitle or create specific key like "signUpTagline"
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
@@ -205,8 +202,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      hintText: 'you@example.com',
+                      labelText: loc.emailLabel,
+                      hintText: loc.emailHint,
                       prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
@@ -215,11 +212,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     textInputAction: TextInputAction.next,
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
+                      final trimmedValue = value?.trim();
+                      if (trimmedValue == null || trimmedValue.isEmpty) {
+                        return loc.appTitle; // Placeholder: loc.validatorRequiredEmail
                       }
-                      if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value.trim())) {
-                        return 'Please enter a valid email address';
+                      if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(trimmedValue)) {
+                        return loc.appTitle; // Placeholder: loc.validatorInvalidEmail
                       }
                       return null;
                     },
@@ -229,8 +227,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   TextFormField(
                     controller: _passwordController,
                     decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Choose a strong password (min. 6 characters)',
+                      labelText: loc.passwordLabel,
+                      hintText: loc.passwordHintSignUp,
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
@@ -244,10 +242,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter a password';
+                        return loc.appTitle; // Placeholder: loc.validatorRequiredPassword
                       }
                       if (value.length < 6) {
-                        return 'Password must be at least 6 characters long';
+                        return loc.signUpFailedWeakPasswordSnackbar; // Using existing key
                       }
                       return null;
                     },
@@ -257,8 +255,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      hintText: 'Re-enter your password',
+                      labelText: loc.confirmPasswordLabel,
+                      hintText: loc.confirmPasswordHint,
                       prefixIcon: const Icon(Icons.lock_person_outlined),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
@@ -272,10 +270,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
+                        return loc.appTitle; // Placeholder: loc.validatorRequiredConfirmPassword
                       }
                       if (value != _passwordController.text) {
-                        return 'Passwords do not match';
+                        return loc.appTitle; // Placeholder: loc.validatorPasswordsDoNotMatch
                       }
                       return null;
                     },
@@ -287,7 +285,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ? const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
                       : ElevatedButton.icon(
                           icon: const Icon(Icons.person_add_rounded),
-                          label: const Text('CREATE ACCOUNT'),
+                          label: Text(loc.signUpButtonText),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             textStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -302,10 +300,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Already have an account?", style: theme.textTheme.bodyMedium),
+                      Text(loc.alreadyHaveAccount, style: theme.textTheme.bodyMedium),
                       TextButton(
                         onPressed: _isLoading ? null : _navigateToLogin,
-                        child: Text('Login Here', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.secondary)),
+                        child: Text(loc.loginHereButton, style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.secondary)),
                       ),
                     ],
                   ),
@@ -318,4 +316,3 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 }
-```

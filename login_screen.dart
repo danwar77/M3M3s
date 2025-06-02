@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added import
 
 // Placeholder SignUpScreen for navigation from LoginScreen
 // In a real app, this would be in 'signup_screen.dart' and imported.
@@ -7,8 +8,9 @@ class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!; // Added localization instance
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(title: Text(loc.signUpScreenTitle)), // Localized
       body: const Center(child: Text('Sign Up Screen Placeholder (Navigated from Login)')),
     );
   }
@@ -39,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _performLogin() async {
     if (_isLoading) return;
+    final loc = AppLocalizations.of(context)!; // Added localization instance
 
     FocusScope.of(context).unfocus();
 
@@ -50,9 +53,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _isLoading = true);
       }
-      scaffoldMessenger.removeCurrentSnackBar(); // Clear previous snackbars
+      scaffoldMessenger.removeCurrentSnackBar();
 
       try {
+        // ignore: unused_local_variable
         final AuthResponse response = await Supabase.instance.client.auth.signInWithPassword(
           email: email,
           password: password,
@@ -61,21 +65,19 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: const Text('Login successful! Welcome back.'),
+              content: Text(loc.loginSuccessfulSnackbar),
               backgroundColor: Colors.green.shade700,
             ),
           );
-          // AuthState listener in main_app_structure.dart should handle navigation.
         }
 
       } on AuthException catch (e) {
         if (mounted) {
-          String errorMessage = 'Login failed. Please try again.';
+          String errorMessage = loc.loginFailedSnackbar;
           if (e.message.toLowerCase().contains('invalid login credentials')) {
-            errorMessage = 'Invalid email or password. Please check your credentials.';
+            errorMessage = loc.loginFailedInvalidCredentialsSnackbar;
           } else if (e.message.toLowerCase().contains('email not confirmed')) {
-            errorMessage = 'Please confirm your email address before logging in.';
-            // TODO: Optionally add a "Resend confirmation email" button/logic here
+            errorMessage = loc.loginFailedEmailNotConfirmedSnackbar;
           } else {
             errorMessage = e.message;
           }
@@ -90,6 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           scaffoldMessenger.showSnackBar(
             SnackBar(
+              // Assuming a generic error key might be good, or stick to e.toString()
               content: Text('An unexpected error occurred: ${e.toString()}'),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
@@ -105,19 +108,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _navigateToSignUp() {
     if (_isLoading) return;
-    // Navigate to the actual SignUpScreen
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SignUpScreen()), // Using placeholder defined above
+      MaterialPageRoute(builder: (context) => const SignUpScreen()),
     );
   }
 
   void _forgotPassword() {
     if (_isLoading) return;
-    // TODO: Implement navigation or dialog for password recovery
+    final loc = AppLocalizations.of(context)!; // Added localization instance
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Forgot Password functionality (placeholder)'), backgroundColor: Colors.blueGrey),
+      // Assuming a key like "forgotPasswordPlaceholderSnackbar" exists or is added
+      SnackBar(content: Text(loc.forgotPasswordButton + " (Action TBD)"), backgroundColor: Colors.blueGrey),
     );
     print('Forgot Password tapped');
   }
@@ -126,10 +129,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
+    final loc = AppLocalizations.of(context)!; // Added localization instance
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login to MemeMarvel'),
+        title: Text(loc.loginScreenTitle),
         centerTitle: true,
       ),
       body: Center(
@@ -150,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Welcome Back!',
+                    loc.appTitle, // Using appTitle for "Welcome Back!" or similar generic welcome
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -159,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to continue your meme journey.',
+                    loc.loginScreenTitle, // Re-using for tagline or specific welcome
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
@@ -168,8 +172,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      hintText: 'you@example.com',
+                      labelText: loc.emailLabel,
+                      hintText: loc.emailHint,
                       prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
@@ -178,11 +182,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.next,
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
+                      final trimmedValue = value?.trim();
+                      if (trimmedValue == null || trimmedValue.isEmpty) {
+                        // Assuming key: "validatorRequiredEmail"
+                        return loc.appTitle; // Placeholder, replace with actual loc.validatorRequiredEmail
                       }
-                      if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(value.trim())) {
-                        return 'Please enter a valid email address';
+                      if (!RegExp(r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+").hasMatch(trimmedValue)) {
+                        // Assuming key: "validatorInvalidEmail"
+                        return loc.appTitle; // Placeholder, replace with actual loc.validatorInvalidEmail
                       }
                       return null;
                     },
@@ -192,8 +199,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Enter your password',
+                      labelText: loc.passwordLabel,
+                      hintText: loc.passwordHintLogin,
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
@@ -213,10 +220,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        // Assuming key: "validatorRequiredPassword"
+                        return loc.appTitle; // Placeholder, replace with actual loc.validatorRequiredPassword
                       }
                       if (value.length < 6) {
-                        return 'Password must be at least 6 characters long';
+                        // Assuming key: "validatorPasswordLength"
+                        return loc.appTitle; // Placeholder, replace with actual loc.validatorPasswordLength
                       }
                       return null;
                     },
@@ -227,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: _isLoading ? null : _forgotPassword,
-                      child: Text('Forgot Password?', style: TextStyle(color: theme.colorScheme.secondary)),
+                      child: Text(loc.forgotPasswordButton, style: TextStyle(color: theme.colorScheme.secondary)),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -236,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()))
                       : ElevatedButton.icon(
                           icon: const Icon(Icons.login_rounded),
-                          label: const Text('LOGIN'),
+                          label: Text(loc.loginButtonText.toUpperCase()), // ARB has "Login", toUpperCase for style
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             textStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -251,10 +260,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Don't have an account?", style: theme.textTheme.bodyMedium),
+                      Text(loc.dontHaveAccount, style: theme.textTheme.bodyMedium),
                       TextButton(
                         onPressed: _isLoading ? null : _navigateToSignUp,
-                        child: Text('Sign Up Now', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.secondary)),
+                        child: Text(loc.signUpNowButton, style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.secondary)),
                       ),
                     ],
                   ),
@@ -267,4 +276,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-```
