@@ -231,13 +231,11 @@ class _TextInputScreenState extends State<TextInputScreen> {
         scaffoldMessenger.removeCurrentSnackBar();
         scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.appTitle + ' Suggestions received! Tone: $tone.'), duration: const Duration(seconds: 2), backgroundColor: Colors.blueAccent)); // Placeholder
       }
-      if (mounted) { setState(() => _isProcessing = false); } else { return; }
+      if (mounted) setState(() => _isProcessing = false); else { return; }
       final memeDataForDisplay = MemeData(topText: topText, bottomText: bottomText, imageUrl: _customImageFile == null ? _selectedTemplateImageUrl! : null, localImageFile: _customImageFile, templateId: _customImageFile == null ? _selectedTemplateId! : null);
       if (mounted) navigator.push(MaterialPageRoute(builder: (context) => MemeDisplayScreen(initialMemeData: memeDataForDisplay)));
-    } on FunctionsException catch (error) {
-      if (mounted) { setState(() => _isProcessing = false); scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(backgroundColor: Theme.of(context).colorScheme.error, content: Text(loc.appTitle + ' Suggestion Error: ${error.message}'))); } // Placeholder
-    } catch (e) {
-      if (mounted) { setState(() => _isProcessing = false); scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(backgroundColor: Theme.of(context).colorScheme.error, content: Text(loc.appTitle + ' An unexpected error occurred: ${e.toString()}'))); } // Placeholder
+    } catch (error) {
+      if (mounted) { setState(() => _isProcessing = false); scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(backgroundColor: Theme.of(context).colorScheme.error, content: Text(loc.appTitle + ' An unexpected error occurred: ${error.toString()}'))); } // Placeholder
     } 
   }
 
@@ -264,7 +262,7 @@ class _TextInputScreenState extends State<TextInputScreen> {
                 Expanded(child: Builder(builder: (context) { 
                   if (_isLoadingInitialTemplates && _allFetchedTemplates.isEmpty) return Center(child: Padding(padding: const EdgeInsets.all(16.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const CircularProgressIndicator(), const SizedBox(height: 20), Text(modalLoc.loadingTemplates, style: theme.textTheme.bodyMedium)])));
                   if (_fetchTemplatesError != null && _allFetchedTemplates.isEmpty) return Center(child: Padding(padding: const EdgeInsets.all(20.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.error_outline_rounded, color: theme.colorScheme.error, size: 48), const SizedBox(height: 16), Text(modalLoc.errorLoadingTemplates.split('.').first, textAlign: TextAlign.center, style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.error)), const SizedBox(height: 8), Text(_fetchTemplatesError.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error.withOpacity(0.8))), const SizedBox(height: 20), ElevatedButton.icon(icon: const Icon(Icons.refresh_rounded), label: Text(modalLoc.retryButton), onPressed: () => _fetchTemplates(isInitialFetch: true), style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.errorContainer, foregroundColor: theme.colorScheme.onErrorContainer))])));
-                  if (_allFetchedTemplates.isEmpty && !_hasMoreTemplates && !_isLoadingInitialTemplates) return Center(child: Padding(padding: const EdgeInsets.all(20.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.collections_bookmark_outlined, color: Colors.grey[500], size: 48), const SizedBox(height: 16), Text(modalLoc.noTemplatesFound.split('\n').first, style: theme.textTheme.titleMedium?.copyWith(color: Colors.grey[700])), const SizedBox(height: 8), Text(modalLoc.noTemplatesFound.split('\n').last, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])), const SizedBox(height: 20), ElevatedButton.icon(icon: const Icon(Icons.refresh_rounded), label: Text(modalLoc.refreshButton), onPressed: () => _fetchTemplates(isInitialFetch: true))])));
+                  if (_allFetchedTemplates.isEmpty && !_hasMoreTemplates && !_isLoadingInitialTemplates) return Center(child: Padding(padding: const EdgeInsets.all(20.0), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.collections_bookmark_outlined, color: Colors.grey[500], size: 48), const SizedBox(height: 16), Text(modalLoc.noTemplatesFound.split('').first, style: theme.textTheme.titleMedium?.copyWith(color: Colors.grey[700])), const SizedBox(height: 8), Text(modalLoc.noTemplatesFound.split('').last, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600])), const SizedBox(height: 20), ElevatedButton.icon(icon: const Icon(Icons.refresh_rounded), label: Text(modalLoc.refreshButton), onPressed: () => _fetchTemplates(isInitialFetch: true))])));
                   final crossAxisCount = MediaQuery.of(context).size.width > 600 ? 4 : 3;
                   return GridView.builder(controller: _templateScrollController, padding: const EdgeInsets.all(12.0), gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: crossAxisCount, crossAxisSpacing: 10.0, mainAxisSpacing: 10.0, childAspectRatio: 0.8), itemCount: _allFetchedTemplates.length + (_hasMoreTemplates && _allFetchedTemplates.isNotEmpty ? 1 : 0),
                     itemBuilder: (BuildContext context, int index) {
@@ -321,47 +319,214 @@ class _TextInputScreenState extends State<TextInputScreen> {
   }
 
   Widget _buildSuggestionsCard(BuildContext context, Map<String, dynamic> suggestions) {
-    final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
-    final analyzedText = suggestions['analyzedText'] as Map<String, dynamic>?;
-    final List<dynamic>? suggestedTemplatesDynamic = suggestions['suggestedTemplates'] as List<dynamic>?;
-    final List<Map<String, dynamic>> suggestedTemplatesData = (suggestedTemplatesDynamic ?? []).map((item) => item as Map<String, dynamic>).toList();
-    final scaffoldMessenger = ScaffoldMessenger.of(context); 
-    return Card(elevation: 2.0, margin: const EdgeInsets.symmetric(vertical: 16.0), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-      child: Padding(padding: const EdgeInsets.all(16.0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(loc.appTitle + " - AI Suggestions", style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.w600)), // Placeholder
-        const Divider(height: 20.0, thickness: 0.5),
-        if (analyzedText != null) ...[
-          Padding(padding: const EdgeInsets.symmetric(vertical: 4.0), child: Row(children: [Icon(Icons.psychology_outlined, color: colorScheme.secondary, size: 20), const SizedBox(width: 8), Text(loc.appTitle +" Tone: ", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)), Expanded(child: Text(analyzedText['tone']?.toString() ?? 'N/A', style: theme.textTheme.bodyMedium))])), // Placeholder
-          if (analyzedText['language'] != null) Padding(padding: const EdgeInsets.symmetric(vertical: 4.0), child: Row(children: [Icon(Icons.translate_outlined, color: colorScheme.secondary, size: 20), const SizedBox(width: 8), Text(loc.appTitle +" Lang: ", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)), Expanded(child: Text(analyzedText['language']?.toString() ?? 'N/A', style: theme.textTheme.bodyMedium))])), // Placeholder
-          Padding(padding: const EdgeInsets.only(top: 8.0, bottom: 4.0), child: Text(loc.appTitle + " Keywords:", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600))), // Placeholder
-          if ((analyzedText['keywords'] as List?)?.isNotEmpty ?? false) Wrap(spacing: 8.0, runSpacing: 4.0, children: ((analyzedText['keywords'] as List).cast<String>()).map((keyword) => ActionChip(label: Text(keyword), backgroundColor: colorScheme.secondaryContainer.withOpacity(0.7), labelStyle: TextStyle(color: colorScheme.onSecondaryContainer, fontSize: theme.textTheme.bodySmall?.fontSize), padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 0.0), materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, onPressed: () { scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.keywordTappedSnackbar(keyword)), duration: const Duration(seconds: 2), backgroundColor: Colors.teal.shade700)); print('Keyword tapped: $keyword'); })).toList())
-          else Padding(padding: const EdgeInsets.symmetric(vertical: 4.0), child: Text(loc.appTitle + " No keywords.", style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic))), // Placeholder
-          const SizedBox(height: 12)],
-        if (suggestedTemplatesData.isNotEmpty) ...[
+  final theme = Theme.of(context);
+  final loc = AppLocalizations.of(context)!;
+  final colorScheme = theme.colorScheme;
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+  final analyzedText = suggestions['analyzedText'] as Map<String, dynamic>?;
+  final suggestedTemplatesDynamic = suggestions['suggestedTemplates'] as List<dynamic>?;
+  final suggestedTemplatesData = (suggestedTemplatesDynamic ?? [])
+      .map((item) => item as Map<String, dynamic>)
+      .toList();
+
+  return Card(
+    elevation: 2.0,
+    margin: const EdgeInsets.symmetric(vertical: 16.0),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          Text(
+            "${loc.appTitle} - AI Suggestions",
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const Divider(height: 20.0, thickness: 0.5),
-          Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(loc.appTitle + " Suggested Templates:", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600))), // Placeholder
-          Column(children: suggestedTemplatesData.take(3).map((suggestionMap) { 
-            final String? suggestedTemplateId = suggestionMap['templateId'] as String? ?? suggestionMap['id'] as String?; final String? suggestedTemplateName = suggestionMap['name'] as String?; final String? suggestedImageUrl = suggestionMap['imageUrl'] as String? ?? suggestionMap['thumbnailUrl'] as String?;
-            if (suggestedTemplateId == null || suggestedTemplateName == null || suggestedImageUrl == null) return const SizedBox.shrink(); 
-            return Padding(padding: const EdgeInsets.only(bottom: 4.0), child: SuggestedTemplateItem(suggestionData: suggestionMap, onTap: () async { 
-              if (_isFetchingSuggestionDetails || !mounted) return; 
-              setState(() => _isFetchingSuggestionDetails = true); scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.loadingSuggestionDetailsSnackbar(suggestedTemplateName)), duration: const Duration(seconds: 2), backgroundColor: Colors.blueGrey.shade700));
-              try {
-                final String mainImageUrl = suggestedImageUrl; 
-                if (mounted) {
-                  setState(() { _selectedTemplateId = suggestedTemplateId; _selectedTemplateName = suggestedTemplateName; _selectedTemplateImageUrl = mainImageUrl; _customImageFile = null; _suggestionResults = null; });
-                  scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.templateSelectedSnackbar(suggestedTemplateName)), backgroundColor: Colors.green.shade700, duration: const Duration(seconds: 2)));
+
+          if (analyzedText != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                children: [
+                  Icon(Icons.psychology_outlined, color: colorScheme.secondary, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${loc.appTitle} Tone: ",
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Expanded(
+                    child: Text(
+                      analyzedText['tone']?.toString() ?? 'N/A',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (analyzedText['language'] != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.translate_outlined, color: colorScheme.secondary, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      "${loc.appTitle} Lang: ",
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    Expanded(
+                      child: Text(
+                        analyzedText['language']?.toString() ?? 'N/A',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
+              child: Text(
+                "${loc.appTitle} Keywords:",
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            if ((analyzedText['keywords'] as List?)?.isNotEmpty ?? false)
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: (analyzedText['keywords'] as List).cast<String>().map((keyword) {
+                  return ActionChip(
+                    label: Text(keyword),
+                    backgroundColor: colorScheme.secondaryContainer.withOpacity(0.7),
+                    labelStyle: TextStyle(
+                      color: colorScheme.onSecondaryContainer,
+                      fontSize: theme.textTheme.bodySmall?.fontSize,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 0.0),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onPressed: () {
+                      scaffoldMessenger.removeCurrentSnackBar();
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text(loc.keywordTappedSnackbar(keyword)),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: Colors.teal.shade700,
+                        ),
+                      );
+                      print('Keyword tapped: $keyword');
+                    },
+                  );
+                }).toList(),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Text(
+                  "${loc.appTitle} No keywords.",
+                  style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+                ),
+              ),
+            const SizedBox(height: 12),
+          ],
+
+          if (suggestedTemplatesData.isNotEmpty) ...[
+            const Divider(height: 20.0, thickness: 0.5),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                "${loc.appTitle} Suggested Templates:",
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Column(
+              children: suggestedTemplatesData.take(3).map((suggestionMap) {
+                final suggestedTemplateId = suggestionMap['templateId'] as String? ?? suggestionMap['id'] as String?;
+                final suggestedTemplateName = suggestionMap['name'] as String?;
+                final suggestedImageUrl = suggestionMap['imageUrl'] as String? ?? suggestionMap['thumbnailUrl'] as String?;
+
+                if (suggestedTemplateId == null || suggestedTemplateName == null || suggestedImageUrl == null) {
+                  return const SizedBox.shrink();
                 }
-              } catch (e) { 
-                if (mounted) { scaffoldMessenger.removeCurrentSnackBar(); scaffoldMessenger.showSnackBar(SnackBar(content: Text(loc.errorLoadingTemplateDetailsSnackbar(suggestedTemplateName, e.toString())), backgroundColor: Theme.of(context).colorScheme.error)); }
-              } finally { if (mounted) setState(() => _isFetchingSuggestionDetails = false); }
-            }));
-          }).toList())] 
-        else if (analyzedText != null) ...[ const Divider(height: 20.0, thickness: 0.5), Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Text(loc.appTitle + " No specific template suggestions.", style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)))] // Placeholder
-      ]))));
-  }
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: SuggestedTemplateItem(
+                    suggestionData: suggestionMap,
+                    onTap: () async {
+                      if (_isFetchingSuggestionDetails || !mounted) return;
+                      setState(() => _isFetchingSuggestionDetails = true);
+
+                      scaffoldMessenger.removeCurrentSnackBar();
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text(loc.loadingSuggestionDetailsSnackbar(suggestedTemplateName)),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: Colors.blueGrey.shade700,
+                        ),
+                      );
+
+                      try {
+                        final mainImageUrl = suggestedImageUrl;
+                        if (mounted) {
+                          setState(() {
+                            _selectedTemplateId = suggestedTemplateId;
+                            _selectedTemplateName = suggestedTemplateName;
+                            _selectedTemplateImageUrl = mainImageUrl;
+                            _customImageFile = null;
+                            _suggestionResults = null;
+                          });
+
+                          scaffoldMessenger.removeCurrentSnackBar();
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text(loc.templateSelectedSnackbar(suggestedTemplateName)),
+                              backgroundColor: Colors.green.shade700,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          scaffoldMessenger.removeCurrentSnackBar();
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text(loc.errorLoadingTemplateDetailsSnackbar(suggestedTemplateName, e.toString())),
+                              backgroundColor: theme.colorScheme.error,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isFetchingSuggestionDetails = false);
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+
+          if (analyzedText != null && suggestedTemplatesData.isEmpty) ...[
+            const Divider(height: 20.0, thickness: 0.5),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                "${loc.appTitle} No specific template suggestions.",
+                style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -397,4 +562,4 @@ class _TextInputScreenState extends State<TextInputScreen> {
   }
 }
 
-```
+

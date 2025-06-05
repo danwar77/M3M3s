@@ -163,7 +163,7 @@ void _showStickerBrowser() {
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
                                 print("Error loading asset: $assetPath, $error");
-                                return Center(child: Icon(Icons.error_outline, color: Colors.red.shade300, size: 30));
+                                return Center(child: Icon(Icons.error_outline, color: Colors.red[300], size: 30));
                               },
                             ),
                           ),
@@ -200,7 +200,7 @@ void _showStickerBrowser() {
       if (mounted) {
         ScaffoldMessenger.of(context).removeCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error capturing meme image: ${e.toString()}'), backgroundColor: Colors.redAccent.shade700),
+          SnackBar(content: Text('Error capturing meme image: ${e.toString()}'), backgroundColor: Colors.redAccent ?? Colors.redAccent),
         );
       }
       return null;
@@ -228,7 +228,7 @@ void _showStickerBrowser() {
     if (userId == null) {
       if (mounted) {
         scaffoldMessenger.removeCurrentSnackBar();
-        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Error: User not logged in.'), backgroundColor: Colors.redAccent.shade700));
+        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Error: User not logged in.'), backgroundColor: Colors.redAccent ?? Colors.redAccent));
         setState(() => _isSaving = false);
       }
       return;
@@ -262,22 +262,22 @@ void _showStickerBrowser() {
 
       if (mounted) {
         scaffoldMessenger.removeCurrentSnackBar();
-        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Meme saved successfully! 🎉'), backgroundColor: Colors.green.shade700));
+        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Meme saved successfully! 🎉'), backgroundColor: Colors.green));
       }
     } on StorageException catch (error) {
         if (mounted) {
           scaffoldMessenger.removeCurrentSnackBar();
-          scaffoldMessenger.showSnackBar(SnackBar(content: Text('Storage Error: ${error.message}'), backgroundColor: Colors.redAccent.shade700));
+          scaffoldMessenger.showSnackBar(SnackBar(content: Text('Storage Error: ${error.message}'), backgroundColor: Colors.redAccent ));
         }
     } on PostgrestException catch (error) {
         if (mounted) {
           scaffoldMessenger.removeCurrentSnackBar();
-          scaffoldMessenger.showSnackBar(SnackBar(content: Text('Database Error: ${error.message}'), backgroundColor: Colors.redAccent.shade700));
+          scaffoldMessenger.showSnackBar(SnackBar(content: Text('Database Error: ${error.message}'), backgroundColor: Colors.redAccent ));
         }
     } catch (e) {
       if (mounted) {
         scaffoldMessenger.removeCurrentSnackBar();
-        scaffoldMessenger.showSnackBar(SnackBar(content: Text('An unexpected error occurred: ${e.toString()}'), backgroundColor: Colors.redAccent.shade700));
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('An unexpected error occurred: ${e.toString()}'), backgroundColor: Colors.redAccent ));
       }
     } finally {
       if(mounted) setState(() => _isSaving = false);
@@ -295,7 +295,7 @@ void _showStickerBrowser() {
     if (imageBytes == null) {
       if (mounted) {
         scaffoldMessenger.removeCurrentSnackBar();
-        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Could not prepare meme for sharing.'), backgroundColor: Colors.redAccent.shade700));
+        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Could not prepare meme for sharing.'), backgroundColor:Colors.redAccent ));
         setState(() => _isSharing = false);
       }
       return;
@@ -305,21 +305,20 @@ void _showStickerBrowser() {
       final fileName = 'meme_share_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(imageBytes);
-      final shareResult = await Share.shareXFiles([XFile(file.path, mimeType: 'image/png')], text: 'Check out this awesome meme I made with MemeMarvel!', subject: 'Meme from MemeMarvel App');
+      final shareResult = await Share.shareXFiles([XFile(file.path, mimeType: 'image/png')], text: 'Check out this awesome meme I made with M3M3s!', subject: 'Meme from M3M3s App');
       if (mounted) {
         scaffoldMessenger.removeCurrentSnackBar();
         if (shareResult.status == ShareResultStatus.success) {
-          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Meme shared!'), backgroundColor: Colors.green.shade700));
-        } else if (shareResult.status == ShareResultStatus.dismissed) {
-          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Sharing dismissed.'), backgroundColor: Colors.orangeAccent.shade700));
+          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Meme shared!'), backgroundColor: Colors.green));        } else if (shareResult.status == ShareResultStatus.dismissed) {
+          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Sharing dismissed.'), backgroundColor: Colors.orangeAccent));
         } else {
-           scaffoldMessenger.showSnackBar(SnackBar(content: Text('Sharing unavailable or failed: ${shareResult.status}'), backgroundColor: Colors.grey.shade700));
+           scaffoldMessenger.showSnackBar(SnackBar(content: Text('Sharing unavailable or failed: ${shareResult.status}'), backgroundColor: Colors.grey[700] ?? Colors.grey));
         }
       }
     } catch (e) {
       if (mounted) {
         scaffoldMessenger.removeCurrentSnackBar();
-        scaffoldMessenger.showSnackBar(SnackBar(content: Text('Error sharing meme: ${e.toString()}'), backgroundColor: Colors.redAccent.shade700));
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('Error sharing meme: ${e.toString()}'), backgroundColor: Colors.redAccent ?? Colors.redAccent));
       }
     } finally {
       if (mounted) setState(() => _isSharing = false);
@@ -712,8 +711,8 @@ Widget _buildEditingControls(BuildContext context) {
           children: [
             _buildColorButton(Colors.white, "White"),
             _buildColorButton(Colors.black, "Black"),
-            _buildColorButton(Colors.yellowAccent.shade700, "Yellow"),
-            _buildColorButton(Colors.redAccent.shade400, "Red"),
+            _buildColorButton(Colors.yellowAccent, "Yellow"),
+            _buildColorButton(Colors.redAccent, "Red"),
             IconButton( 
               icon: Icon(Icons.colorize_outlined, color: _textColor), 
               tooltip: 'More Fill Colors',
@@ -760,8 +759,8 @@ Widget _buildEditingControls(BuildContext context) {
             children: [
               _buildStrokeColorButton(Colors.black, context),
               _buildStrokeColorButton(Colors.white, context),
-              _buildStrokeColorButton(Colors.redAccent.shade400, context),
-              _buildStrokeColorButton(Colors.blueAccent.shade400, context),
+              _buildStrokeColorButton(Colors.redAccent[400] ?? Colors.redAccent, context),
+              _buildStrokeColorButton(Colors.blueAccent[400] ?? Colors.blueAccent, context),
               IconButton( 
                 icon: Icon(Icons.colorize_outlined, color: _textStrokeColor), 
                 tooltip: 'More Outline Colors',
@@ -792,7 +791,7 @@ Widget _buildEditingControls(BuildContext context) {
 
   Widget _buildColorButton(Color color, String tooltip) { // This is for FILL color
     bool isSelected = _textColor == color;
-    return Tooltip(message: tooltip, child: InkWell(onTap: (_isSaving || _isSharing) ? null : () => setState(() => _textColor = color), borderRadius: BorderRadius.circular(15), child: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.shade400, width: isSelected ? 3 : 1.5), boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 3, spreadRadius: 1)] : []))));
+    return Tooltip(message: tooltip, child: InkWell(onTap: (_isSaving || _isSharing) ? null : () => setState(() => _textColor = color), borderRadius: BorderRadius.circular(15), child: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[400] ?? Colors.grey, width: isSelected ? 3 : 1.5), boxShadow: isSelected ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), blurRadius: 3, spreadRadius: 1)] : []))));
   }
 
   @override
@@ -801,4 +800,4 @@ Widget _buildEditingControls(BuildContext context) {
   }
 }
 
-```
+

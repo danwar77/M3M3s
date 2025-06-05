@@ -43,4 +43,4 @@ The `children` list of the main `Stack` in `_buildMemePreview()` is populated in
 The current layering strategy (Base Image -> Text -> Stickers on Top, with most recent sticker interaction bringing it to the top of other stickers) is **logical, correct, and aligns with common user expectations** for such an editor.
 
 No changes to the layering order are required for the current scope of features. More advanced user-configurable layering (e.g., explicitly sending items backward/forward) would be a significant future enhancement beyond this plan.
-```
+

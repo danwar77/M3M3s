@@ -38,4 +38,4 @@ To review how the addition of sticker overlays to `MemeDisplayScreen` affects th
 
 ## 5. Overall Summary
 The existing "Save" and "Share" functionalities, which rely on `_captureMemeAsImage()`, will correctly include the visual representation of any added sticker overlays. For the current scope, detailed data about individual stickers (for re-editing layers) will not be persisted to the database.
-```
+

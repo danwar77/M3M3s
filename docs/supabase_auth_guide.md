@@ -47,19 +47,19 @@ The `supabase_flutter` package makes it easy to interact with Supabase from your
 
 Add `supabase_flutter` to your `pubspec.yaml` file:
 
-```yaml
+yaml
 dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.0.0 # Use the latest version
-```
+
 Then run `flutter pub get`.
 
 ### 3.2. Initialization
 
 Initialize the Supabase client in your `main.dart` file, preferably before `runApp()`.
 
-```dart
+dart
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -83,21 +83,21 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-```
+
 
 **Best Practices for Storing URL and Anon Key:**
 Avoid hardcoding your Supabase URL and Anon Key directly in your source code. Use one of these methods:
 
 *   **Environment Variables with `--dart-define`:**
     Pass them during build/run:
-    ```bash
+    bash
     flutter run --dart-define=SUPABASE_URL=YOUR_URL --dart-define=SUPABASE_ANON_KEY=YOUR_KEY
-    ```
+    
     Access them in Dart:
-    ```dart
+    dart
     const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
     const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-    ```
+    
 *   **Configuration File (e.g., `config.json`):**
     Create a `config.json` (add to `.gitignore`), load it at runtime, and parse the keys.
 
@@ -105,16 +105,16 @@ Avoid hardcoding your Supabase URL and Anon Key directly in your source code. Us
 
 Once initialized, you can access the Supabase client instance anywhere in your app:
 
-```dart
+dart
 final supabase = Supabase.instance.client;
 // or for brevity: final supabase = Supabase.client;
-```
+
 
 ### 3.4. User Sign-Up
 
 Create a function to handle user registration.
 
-```dart
+dart
 Future<String?> signUpUser({required String email, required String password}) async {
   try {
     final AuthResponse response = await Supabase.instance.client.auth.signUp(
@@ -141,7 +141,7 @@ Future<String?> signUpUser({required String email, required String password}) as
   }
   return null; // Should not reach here if logic is sound
 }
-```
+
 **Handling Responses:**
 *   **Success:** `response.user` will contain the user object. If email confirmation is enabled, the user needs to verify their email before they can log in.
 *   **Error:** `AuthException` provides error details.
@@ -150,7 +150,7 @@ Future<String?> signUpUser({required String email, required String password}) as
 
 Create a function for user login.
 
-```dart
+dart
 Future<String?> signInUser({required String email, required String password}) async {
   try {
     final AuthResponse response = await Supabase.instance.client.auth.signInWithPassword(
@@ -170,7 +170,7 @@ Future<String?> signInUser({required String email, required String password}) as
   }
   return 'Sign in failed. Please check your credentials.';
 }
-```
+
 **Handling Responses:**
 *   **Success:** `response.user` and `response.session` will be populated.
 *   **Error:** `AuthException` provides error details (e.g., invalid credentials, email not confirmed).
@@ -179,7 +179,7 @@ Future<String?> signInUser({required String email, required String password}) as
 
 Create a function to log users out.
 
-```dart
+dart
 Future<String?> signOutUser() async {
   try {
     await Supabase.instance.client.auth.signOut();
@@ -190,13 +190,13 @@ Future<String?> signOutUser() async {
     return 'An unexpected error occurred during sign out: ${e.toString()}';
   }
 }
-```
+
 
 ### 3.7. Listening to Auth State Changes
 
 Supabase provides a stream to listen for authentication events (sign-in, sign-out, token refresh, etc.). This is crucial for managing app navigation and UI updates.
 
-```dart
+dart
 // Example: In your main widget or a dedicated auth state manager
 StreamSubscription<AuthState> _authStateSubscription;
 
@@ -231,14 +231,14 @@ void dispose() {
   _authStateSubscription.cancel();
   super.dispose();
 }
-```
+
 
 **Usage with State Management:**
 This stream is commonly used with state management solutions like Provider, Riverpod, or BLoC. You can expose the `User` object or authentication status through your state management system and have widgets rebuild accordingly.
 
 **Example with `StreamBuilder` for simple navigation:**
 
-```dart
+dart
 // In your root widget or navigation handler
 class AuthGate extends StatelessWidget {
   @override
@@ -259,7 +259,7 @@ class AuthGate extends StatelessWidget {
     );
   }
 }
-```
+
 
 ### 3.8. Session Management
 
@@ -269,7 +269,7 @@ The `supabase_flutter` package automatically handles session persistence (stores
 
 You can get the currently logged-in user's details at any time:
 
-```dart
+dart
 final currentUser = Supabase.instance.client.auth.currentUser;
 
 if (currentUser != null) {
@@ -278,7 +278,7 @@ if (currentUser != null) {
   print('User App Metadata: ${currentUser.appMetadata}'); // Custom data set during sign up or update
   print('User Metadata: ${currentUser.userMetadata}'); // From social providers or updated manually
 }
-```
+
 
 ## 4. Linking Auth to Row Level Security (RLS)
 
@@ -287,7 +287,7 @@ Supabase's powerful RLS allows you to define data access policies based on the a
 **Example RLS Policy:**
 This policy ensures that users can only select their own profile from the `profiles` table.
 
-```sql
+sql
 -- (From schema.sql)
 -- Enable RLS on the table first
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -297,7 +297,7 @@ CREATE POLICY "Users can select their own profile."
 ON public.profiles
 FOR SELECT
 USING (auth.uid() = id);
-```
+
 When a Flutter client authenticated with Supabase makes a request to fetch data from the `profiles` table, Supabase uses the user's JWT to determine `auth.uid()` and applies the RLS policy accordingly.
 
 ## 5. Automating Profile Creation (Trigger)
@@ -307,7 +307,7 @@ It's common to have a public `profiles` table that stores additional user inform
 **SQL Trigger Function:**
 This function, when triggered, inserts a new row into `public.profiles` using the new user's ID and email from `auth.users`.
 
-```sql
+sql
 -- (From schema.sql)
 -- Function to create a profile for a new user
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -327,7 +327,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-```
+
 **Note:**
 *   `SECURITY DEFINER`: This allows the function to run with the permissions of the user who defined it (usually a superuser or admin), enabling it to write to `public.profiles` even if the new user doesn't have direct insert permissions yet.
 *   `NEW.raw_user_meta_data->>'username'`: This attempts to pull a username if it was provided in the `data` field during `signUp`. Adjust as needed.
@@ -344,4 +344,4 @@ CREATE TRIGGER on_auth_user_created
 *   **Regularly Update `supabase_flutter`:** Keep the package updated to the latest version for security patches and new features.
 
 This guide should provide a solid foundation for implementing Supabase authentication in your Flutter application. Refer to the official [Supabase Flutter documentation](https://supabase.io/docs/guides/getting-started/tutorials/with-flutter) for more details and advanced use cases.
-```
+

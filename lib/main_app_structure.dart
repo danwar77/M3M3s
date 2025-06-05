@@ -1,7 +1,8 @@
 import 'dart:async'; 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart'; 
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'login_screen.dart'; // Import the actual LoginScreen
 // import 'package:shared_preferences/shared_preferences.dart'; // User TODO
 
 class LoginScreenPlaceholder extends StatelessWidget { 
@@ -299,7 +300,7 @@ class _MemeAppState extends State<MemeApp> {
     return MaterialApp(
       onGenerateTitle: (BuildContext context) {
         // Ensure AppLocalizations is available from this context
-        return AppLocalizations.of(context)?.appTitle ?? 'MemeMarvel App';
+        return AppLocalizations.of(context)?.appTitle ?? 'M3M3s App';
       },
       theme: ThemeData( 
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -313,9 +314,9 @@ class _MemeAppState extends State<MemeApp> {
       locale: _currentLocale, 
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: _session == null ? const LoginScreenPlaceholder() : const MainScreen(),
+      home: _session == null ? const LoginScreen() : const MainScreen(), // Use the actual LoginScreen
       debugShowCheckedModeBanner: false,
     );
   }
 }
-```
+

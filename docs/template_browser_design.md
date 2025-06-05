@@ -1,6 +1,6 @@
 # Template Browser UI Design
 
-This document outlines the UI design and interaction flow for the template browser feature in the MemeMarvel application. The browser will allow users to select a predefined meme template to use as a base for their creation.
+This document outlines the UI design and interaction flow for the template browser feature in the M3M3s application. The browser will allow users to select a predefined meme template to use as a base for their creation.
 
 ## 1. Triggering Mechanism
 
@@ -94,4 +94,4 @@ This widget represents a single item in the template grid.
 *   **State Management (within Bottom Sheet):** The template browser within the bottom sheet will need its own state management for handling loading, data, error, and empty states for the template list.
 
 This design provides a user-friendly and modern approach for selecting templates, leveraging common Flutter UI patterns.
-```
+

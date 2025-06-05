@@ -32,7 +32,7 @@ class CreateScreen extends StatelessWidget {
 
                 // App Title
                 Text(
-                  'MemeMarvel', // Replace with your actual app name if different
+                  'M3M3s', // Replace with your actual app name if different
                   style: theme.textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.primary,
@@ -133,4 +133,4 @@ class CreateScreen extends StatelessWidget {
     );
   }
 }
-```
+

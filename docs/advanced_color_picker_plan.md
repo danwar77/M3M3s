@@ -22,7 +22,7 @@ To enhance the text color selection capabilities in `MemeDisplayScreen` by integ
 
 *   **Picker Type:** The comprehensive `ColorPicker` widget (which includes HSV/RGB/Material selectors) will be used to offer maximum flexibility.
 *   **Dialog Implementation Sketch:**
-    ```dart
+    dart
     // Method to show color picker dialog, adaptable for fill or stroke
     // void _showAdvancedColorPicker({required bool forStroke}) {
     //   Color currentColor = forStroke ? _textStrokeColor : _textColor;
@@ -67,7 +67,7 @@ To enhance the text color selection capabilities in `MemeDisplayScreen` by integ
     //     },
     //   );
     // }
-    ```
+    
 
 ## 5. State Management
 
@@ -89,4 +89,4 @@ To enhance the text color selection capabilities in `MemeDisplayScreen` by integ
 5.  Ensure `_buildMemePreview` correctly uses the updated colors. (Step 8 of main plan - already does)
 
 This plan provides a clear path to integrating a powerful color selection tool, enhancing user customization options.
-```
+

@@ -19,6 +19,16 @@ class TemplateInfo {
     this.tags,
   });
 
+  static TemplateInfo fromMap(Map<String, dynamic> map) {
+    return TemplateInfo(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      imageUrl: map['image_url'] as String,
+      thumbnailUrl: map['thumbnail_url'] as String?,
+      tags: (map['tags'] as List?)?.map((e) => e.toString()).toList(),
+    );
+  }
+
   // Example factory constructor if this model needs to parse from Supabase data directly
   // factory TemplateInfo.fromMap(Map<String, dynamic> map) {
   //   return TemplateInfo(
@@ -145,4 +155,4 @@ class TemplateListItem extends StatelessWidget {
     );
   }
 }
-```
+

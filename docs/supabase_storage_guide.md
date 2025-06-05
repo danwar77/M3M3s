@@ -42,17 +42,17 @@ Storage policies control who can access and manipulate files within your buckets
 *   **Option 1: Public Read Access (Simplest for global templates)**
     If the `templates` bucket is marked as "Public" in the dashboard, files are accessible via their public URL. You might still want an explicit policy if you need finer control or if the bucket isn't fully public from the dashboard settings.
 
-    ```sql
+    sql
     -- Allow public read access to all files in the 'templates' bucket
     CREATE POLICY "Public read access for template images"
     ON storage.objects FOR SELECT
     USING (bucket_id = 'templates');
-    ```
+    
 
 *   **Option 2: Admin/Specific Role for Uploads/Updates/Deletes**
     Typically, templates are managed by administrators or a specific role.
 
-    ```sql
+    sql
     -- Example: Allow users with a custom 'admin' role (via JWT claims) to manage template files
     -- Assumes you have a way to set 'user_role' in your custom JWT claims.
     CREATE POLICY "Admins can manage template files"
@@ -64,7 +64,7 @@ Storage policies control who can access and manipulate files within your buckets
     -- CREATE POLICY "Authenticated users can upload to templates bucket"
     -- ON storage.objects FOR INSERT
     -- WITH CHECK (auth.role() = 'authenticated' AND bucket_id = 'templates');
-    ```
+    
 
 #### **`user_memes` Bucket Policies:**
 
@@ -73,7 +73,7 @@ This bucket should be private, and access should be tightly controlled. We'll of
 *   **Users can upload their own memes/images:**
     Files are typically stored under a path like `user_id/filename.ext`.
 
-    ```sql
+    sql
     -- Policy: Allows authenticated users to upload files to the 'user_memes' bucket.
     -- It's highly recommended to scope uploads to a user-specific folder.
     CREATE POLICY "Users can upload their own meme images"
@@ -84,12 +84,12 @@ This bucket should be private, and access should be tightly controlled. We'll of
       auth.uid()::text = (storage.foldername(name))[1] -- Ensures the first folder in the path is the user's ID
       -- Example path: user_id/some_folder/image.png -> (storage.foldername(name))[1] extracts 'user_id'
     );
-    ```
+    
     *Note on `(storage.foldername(name))[1]`: This extracts the first part of the file path (e.g., `user_id` from `user_id/my_meme.png`). Ensure your Flutter app uploads files using this path structure.*
 
 *   **Users can read/download their own memes/images:**
 
-    ```sql
+    sql
     CREATE POLICY "Users can read their own meme images"
     ON storage.objects FOR SELECT
     USING (
@@ -97,11 +97,11 @@ This bucket should be private, and access should be tightly controlled. We'll of
       bucket_id = 'user_memes' AND
       auth.uid()::text = (storage.foldername(name))[1] -- User can only read from their own folder
     );
-    ```
+    
 
 *   **Users can delete their own memes/images:**
 
-    ```sql
+    sql
     CREATE POLICY "Users can delete their own meme images"
     ON storage.objects FOR DELETE
     USING (
@@ -109,11 +109,11 @@ This bucket should be private, and access should be tightly controlled. We'll of
       bucket_id = 'user_memes' AND
       auth.uid()::text = (storage.foldername(name))[1] -- User can only delete from their own folder
     );
-    ```
+    
 
 *   **Users can update their own memes/images (Optional, if updates are allowed):**
 
-    ```sql
+    sql
     CREATE POLICY "Users can update their own meme images"
     ON storage.objects FOR UPDATE
     USING (
@@ -126,7 +126,7 @@ This bucket should be private, and access should be tightly controlled. We'll of
       bucket_id = 'user_memes' AND
       auth.uid()::text = (storage.foldername(name))[1]
     );
-    ```
+    
 
 *   **(Optional) Public Read for Specific Memes:**
     Directly linking Storage RLS to metadata in a database table (e.g., `memes.visibility = 'public'`) is complex. Common approaches:
@@ -142,10 +142,10 @@ Ensure `supabase_flutter` is initialized in your `main.dart` as covered in the A
 
 ### 3.1. Accessing the Storage Client
 
-```dart
+dart
 final supabase = Supabase.instance.client;
 final storage = supabase.storage; // Or Supabase.instance.client.storage;
-```
+
 
 ### 3.2. Uploading Files
 
@@ -153,7 +153,7 @@ final storage = supabase.storage; // Or Supabase.instance.client.storage;
 
 This is common for user-uploaded custom images.
 
-```dart
+dart
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 // Assuming image_picker is used to get the File object
@@ -182,13 +182,13 @@ Future<String?> uploadCustomImage(File imageFile, String userId) async {
     return null;
   }
 }
-```
+
 
 #### Uploading Raw Bytes (`Uint8List`)
 
 Useful for memes generated on the client-side (e.g., from a canvas or widget).
 
-```dart
+dart
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -218,7 +218,7 @@ Future<String?> uploadGeneratedMemeData(Uint8List memeData, String userId, Strin
     return null;
   }
 }
-```
+
 
 ### 3.3. Downloading Files / Getting URLs
 
@@ -226,7 +226,7 @@ Future<String?> uploadGeneratedMemeData(Uint8List memeData, String userId, Strin
 
 If the `templates` bucket is public:
 
-```dart
+dart
 String getPublicTemplateUrl(String templateImagePath) {
   // templateImagePath is the path within the bucket, e.g., 'classic/drake.png'
   try {
@@ -242,13 +242,13 @@ String getPublicTemplateUrl(String templateImagePath) {
 
 // Usage with Flutter's Image widget:
 // Image.network(getPublicTemplateUrl('path/to/your/template.png'))
-```
+
 
 #### Signed URLs (for private files - Recommended for `user_memes`)
 
 Signed URLs provide temporary access to private files.
 
-```dart
+dart
 Future<String?> createSignedMemeUrl(String memePath) async {
   // memePath is the full path within the 'user_memes' bucket, e.g., 'user_id/generated/meme.png'
   try {
@@ -281,13 +281,13 @@ Future<String?> createSignedMemeUrl(String memePath) async {
 //     return CircularProgressIndicator();
 //   },
 // )
-```
+
 
 ### 3.4. Listing Files (Less common for this app's direct client needs)
 
 You can list files within a bucket or a specific folder. This might be more useful for admin panels.
 
-```dart
+dart
 Future<void> listUserFiles(String userId) async {
   try {
     final fileObjects = await Supabase.instance.client.storage
@@ -301,11 +301,11 @@ Future<void> listUserFiles(String userId) async {
     print('Error listing files: ${e.message}');
   }
 }
-```
+
 
 ### 3.5. Deleting Files
 
-```dart
+dart
 Future<bool> deleteMemeImage(String memePath) async {
   // memePath is the full path within the 'user_memes' bucket, e.g., 'user_id/generated/meme.png'
   try {
@@ -322,7 +322,7 @@ Future<bool> deleteMemeImage(String memePath) async {
     return false;
   }
 }
-```
+
 **Important:** When a user deletes a meme record from the database, you should also delete the corresponding image file from Supabase Storage to avoid orphaned files. This can be done via a backend function/trigger or by the client app upon successful database deletion.
 
 ## 4. File Naming and Organization Strategy
@@ -353,4 +353,4 @@ A consistent file organization strategy is crucial, especially when using RLS po
 *   **Network Issues:** File uploads/downloads can be affected by network connectivity. Implement appropriate user feedback and retry mechanisms if necessary.
 
 This guide covers the essentials for integrating Supabase Storage into your Flutter meme application. Always refer to the official [Supabase Storage documentation](https://supabase.io/docs/guides/storage) and [Supabase Flutter Storage API](https://supabase.io/docs/reference/dart/storage-from-list) for the most up-to-date information and advanced features.
-```
+

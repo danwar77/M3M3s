@@ -12,19 +12,19 @@ To verify that the text rendering logic in `_buildMemePreview()` (specifically w
 *   **Fill Text (`fillTextStyle`):**
     *   [x] **Is `color: _textColor` used for the fill `Text` widget's style?**
         *   **Finding:** Yes. The `fillTextStyle` object is correctly initialized with `color: _textColor`, ensuring that the main text fill color is derived from the `_textColor` state variable.
-        ```dart
+        dart
         TextStyle fillTextStyle = TextStyle(
           fontFamily: _fontFamily,
           fontSize: _fontSize,
           color: _textColor, // User-selected fill color
           fontWeight: FontWeight.bold, 
         );
-        ```
+        
 
 *   **Stroke Text (`strokeTextStyle` / `Paint` object):**
     *   [x] **Is `..color = _textStrokeColor` used for the `Paint` object within the `foreground` property for the stroke `Text` widget?**
         *   **Finding:** Yes. When the stroke is enabled, the `strokeTextStyle` correctly initializes its `foreground` `Paint` object with `..color = _textStrokeColor`, ensuring the stroke color is derived from the `_textStrokeColor` state variable.
-        ```dart
+        dart
         TextStyle strokeTextStyle = TextStyle(
           // ... other properties ...
           foreground: Paint()
@@ -33,14 +33,14 @@ To verify that the text rendering logic in `_buildMemePreview()` (specifically w
             ..color = _textStrokeColor // User-selected stroke color
             // ... other paint properties ...
         );
-        ```
+        
 
 ### 2.2. `_showAdvancedColorPicker()` State Update:
 
 *   **`setState()` Trigger:**
     *   [x] **Confirm that `_showAdvancedColorPicker()` calls `setState()` after the user selects a color and dismisses the dialog with "Select Color".**
         *   **Finding:** Yes. The "Select Color" button's `onPressed` callback in the `AlertDialog` shown by `_showAdvancedColorPicker` correctly calls `setState()` to update either `_textColor` or `_textStrokeColor` with the `pickerColor` chosen by the user.
-        ```dart
+        dart
         onPressed: () {
           if (mounted) { 
             setState(() {
@@ -53,7 +53,7 @@ To verify that the text rendering logic in `_buildMemePreview()` (specifically w
           }
           Navigator.of(context).pop(); 
         },
-        ```
+        
 
 ## 3. Conclusion
 The review confirms that:
@@ -63,4 +63,4 @@ The review confirms that:
 Therefore, any color changes made using the advanced color picker (which updates `_textColor` or `_textStrokeColor`) will be automatically and correctly reflected in the meme preview without requiring further modifications to the color application logic within `_buildMemePreview()` or `_buildTextElement()`.
 
 The implementation aligns with the planned use of existing state variables for the advanced color picker functionality.
-```
+

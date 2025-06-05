@@ -1,4 +1,4 @@
-# Setting Up Sticker Assets for MemeMarvel App
+# Setting Up Sticker Assets for M3M3s App
 
 This guide explains how to add a predefined list of sticker images to your Flutter project for use in the meme editor.
 
@@ -31,7 +31,7 @@ You need to tell your Flutter app where to find these new new assets.
 3.  Under `flutter:`, find or add the `assets:` subsection.
 4.  Add the path to your `stickers` folder. To include all files within this folder, use the folder path with a trailing slash:
 
-    ```yaml
+    yaml
     flutter:
       # This line enables the use of Material Icons.
       uses-material-design: true
@@ -40,7 +40,7 @@ You need to tell your Flutter app where to find these new new assets.
         - assets/stickers/ # This includes all files in the assets/stickers/ folder
         # - assets/your_other_images_folder/ # If you have other asset folders
         # - assets/some_specific_image.png   # Example of a specific file
-    ```
+    
 
     **Important:**
     *   Indentation is critical in YAML files. `assets:` should be indented under `flutter:`. Each path listed under `assets:` must start with a `- ` (dash and a space).
@@ -55,7 +55,7 @@ You need to tell your Flutter app where to find these new new assets.
 
 Later, when implementing the sticker selection UI in `meme_display_screen.dart`, you will define a list of these asset paths in your Dart code to populate the sticker browser. This list will look something like this:
 
-```dart
+dart
 // Example placeholder in your _MemeDisplayScreenState
 final List<String> _availableStickerAssets = [
   'assets/stickers/sticker_cool_sunglasses.png',
@@ -65,7 +65,7 @@ final List<String> _availableStickerAssets = [
   'assets/stickers/sticker_heart_eyes.png',
   // Add all your sticker asset paths here
 ];
-```
+
 
 By following these steps, your application will be able to access and display the predefined sticker images.
-```
+

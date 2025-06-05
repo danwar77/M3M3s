@@ -131,4 +131,4 @@ The paginated template browser flow within `TextInputScreen` is **largely robust
 *   **Feedback for "Load More" Errors (Scenario 6):** When an error occurs during an infinite scroll fetch (i.e., not an initial load, so `_allFetchedTemplates` is not empty), the error is not explicitly shown to the user. The list just stops loading more. A `SnackBar` or a small error indicator at the bottom of the list could improve this.
 
 Apart from this minor feedback enhancement for "load more" errors, the core pagination logic and UI state handling are sound.
-```
+

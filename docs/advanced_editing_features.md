@@ -77,4 +77,4 @@ This document outlines potential advanced editing features that could be integra
 *   **Gesture Handling:** Implementing draggable, resizable, and rotatable elements requires robust gesture detection and handling (`GestureDetector` with `onPanUpdate`, `onScaleUpdate`, etc.).
 
 These features, if implemented, would significantly expand the creative possibilities for users, transforming the application into a much more powerful and versatile meme editing tool. Each major feature listed here could be a substantial development effort on its own.
-```
+

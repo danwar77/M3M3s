@@ -6,7 +6,7 @@
 To verify that `MemeDisplayScreen` (defined in `meme_display_screen.dart`) correctly receives and utilizes the `initialMemeData` object passed from `TextInputScreen`, ensuring all necessary data fields are accessed and used appropriately for display and subsequent operations like saving.
 
 ## `MemeData` Structure (as defined in `meme_display_screen.dart`):
-```dart
+dart
 class MemeData {
   final String? topText;
   final String? bottomText;
@@ -23,7 +23,7 @@ class MemeData {
   }) : assert(imageUrl != null || localImageFile != null, 
             'Either imageUrl or localImageFile must be provided for display.');
 }
-```
+
 
 ## Verification Points & Findings:
 
@@ -60,4 +60,4 @@ The `MemeDisplayScreen` widget correctly receives and utilizes the `initialMemeD
 *   The save functionality (`_saveMeme`) correctly accesses `templateId` for database storage and uses the presence of `localImageFile` or an `imageUrl` without a `templateId` to determine the `is_custom_image` status.
 
 The current implementation aligns with the planned data flow from `TextInputScreen` and ensures that `MemeDisplayScreen` has the necessary information for its display, editing, and saving functionalities. No issues regarding data reception or utilization were found.
-```
+

@@ -37,7 +37,7 @@ Option B provides the best balance of visual quality, control over stroke proper
 *   The existing `_buildMemePreview()` in `_MemeDisplayScreenState` will be modified.
 *   For each piece of text (top and bottom), a `Stack` will be used.
 *   **Stroke Text Widget (Bottom Layer):**
-    ```dart
+    dart
     Text(
       _topTextController.text.toUpperCase(), // Or respective text variable
       textAlign: TextAlign.center,
@@ -51,9 +51,9 @@ Option B provides the best balance of visual quality, control over stroke proper
         // fontWeight: FontWeight.bold, // Potentially omit or make configurable for stroke
       ),
     )
-    ```
+    
 *   **Fill Text Widget (Top Layer):**
-    ```dart
+    dart
     Text(
       _topTextController.text.toUpperCase(), // Or respective text variable
       textAlign: TextAlign.center,
@@ -65,9 +65,9 @@ Option B provides the best balance of visual quality, control over stroke proper
         shadows: null, // Remove previous shadow-based outline
       ),
     )
-    ```
+    
 *   The existing `shadows` property in the main text's `TextStyle` (which created a faux outline) will be removed or made conditional (disabled if true stroke is enabled).
 *   State variables `_isTextStrokeEnabled`, `_textStrokeColor`, and `_textStrokeWidth` will be added to `_MemeDisplayScreenState` and controlled by new UI elements.
 
 This approach will allow users to toggle the stroke, change its color, and adjust its thickness.
-```
+

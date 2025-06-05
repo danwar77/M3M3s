@@ -39,15 +39,15 @@ We propose the following Edge Functions to encapsulate the custom logic:
     Analyzes the user's input text using an NLP service and suggests relevant meme templates from the database, along with extracted text insights.
 *   **Input (JSON):**
     The function will expect a JSON payload with the following structure:
-    ```json
+    json
     {
       "text": "User's input phrase for the meme",
       "userId": "optional_user_id_for_personalization_or_logging"
     }
-    ```
+    
 *   **Output (JSON):**
     The function will return a JSON response with analyzed text and template suggestions:
-    ```json
+    json
     {
       "analyzedText": {
         "original": "User's input phrase",
@@ -74,7 +74,7 @@ We propose the following Edge Functions to encapsulate the custom logic:
         "bottom": "Suggested Bottom Text"
       }
     }
-    ```
+    
 *   **Internal Logic:**
     1.  **Input Validation:** Validate the incoming `text` field.
     2.  **NLP Integration:**
@@ -95,23 +95,23 @@ We propose the following Edge Functions to encapsulate the custom logic:
 *   **Purpose:**
     Generates a novel image using an external AI image generation service based on a user-provided prompt.
 *   **Input (JSON):**
-    ```json
+    json
     {
       "prompt": "Detailed textual prompt for the AI image generation",
       "userId": "user_id_for_tracking_logging_or_applying_quotas",
       "outputStyle": "e.g., photorealistic, cartoon, pixel_art", // Optional
       "aspectRatio": "e.g., 1:1, 16:9" // Optional
     }
-    ```
+    
 *   **Output (JSON):**
-    ```json
+    json
     {
       "imageUrl": "url_to_the_generated_image", // This could be a direct URL from the AI service or a URL from Supabase Storage after uploading
       "storagePath": "optional_path_if_uploaded_to_supabase_storage", // e.g., "user_id/ai_generated/image_uuid.png"
       "serviceUsed": "Name of the AI image generation service (e.g., DALL-E, Stability AI)",
       "promptUsed": "The actual prompt sent to the AI service (might be modified/enhanced by the Edge Function)"
     }
-    ```
+    
 *   **Internal Logic:**
     1.  **Input Validation:** Validate the `prompt`.
     2.  **Prompt Engineering (Optional):** Enhance or modify the user's prompt for better results with the chosen AI service.
@@ -156,10 +156,10 @@ We propose the following Edge Functions to encapsulate the custom logic:
     *   Standard `fetch` API will be used for making HTTPS requests to external NLP and AI image generation services.
 *   **Secrets Management:**
     *   API keys for external services (NLP, AI Image Gen) **MUST** be stored as Supabase Edge Function secrets:
-        ```bash
+        bash
         supabase secrets set NLP_API_KEY=your_nlp_api_key_value
         supabase secrets set AI_IMAGE_API_KEY=your_ai_image_api_key_value
-        ```
+        
     *   Access these in the function code via `Deno.env.get('NLP_API_KEY')`.
 *   **Error Handling:**
     *   Implement robust `try...catch` blocks for all external API calls and database interactions.
@@ -184,4 +184,4 @@ We propose the following Edge Functions to encapsulate the custom logic:
     *   The Flutter app could call this microservice directly, or an Edge Function could act as a lightweight proxy/gateway to it, which can help keep a unified API front through Supabase. The OpenAPI specification might then be partially implemented by this external microservice.
 
 This plan provides a roadmap for leveraging Supabase Edge Functions to enhance the meme application with intelligent features, while also acknowledging their limitations and considering alternatives for more demanding scenarios.
-```
+

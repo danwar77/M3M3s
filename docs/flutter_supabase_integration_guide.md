@@ -7,18 +7,18 @@ This guide provides a comprehensive overview for Flutter developers on how to us
 ### 1.1. Installation
 Add the `supabase_flutter` package to your `pubspec.yaml`:
 
-```yaml
+yaml
 dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.0.0 # Always check for the latest version
-```
+
 Then, run `flutter pub get` in your terminal.
 
 ### 1.2. Initialization
 Initialize Supabase in your `main.dart` file before running your app. This typically happens in the `main()` function.
 
-```dart
+dart
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -44,31 +44,31 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-```
+
 
 **Best Practices for Storing URL and Anon Key:**
 Do **not** hardcode your Supabase URL and Anon Key directly in your source code if it's public.
 *   **Using `--dart-define` (Recommended for build time):**
     Pass variables during `flutter run` or `flutter build`:
-    ```bash
+    bash
     flutter run --dart-define=SUPABASE_URL=YOUR_URL --dart-define=SUPABASE_ANON_KEY=YOUR_KEY
-    ```
+    
     Access them in your Dart code:
-    ```dart
+    dart
     const String supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: 'DEFAULT_URL_IF_NOT_SET');
     const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'DEFAULT_KEY_IF_NOT_SET');
-    ```
+    
 *   **Using a configuration file (e.g., `.env` loaded at runtime - ensure it's in `.gitignore`):**
     Use packages like `flutter_dotenv` to load environment variables from a `.env` file.
 
 ### 1.3. Accessing the Client
 Once initialized, you can access the Supabase client instance globally:
 
-```dart
+dart
 final supabase = Supabase.instance.client;
 // For brevity, you can also use:
 // final client = Supabase.client;
-```
+
 
 ## 2. Authentication
 
@@ -85,35 +85,35 @@ Supabase Auth provides robust user authentication. The `supabase_flutter` packag
 
 Interact with your Supabase PostgreSQL database using the PostgREST client.
 
-```dart
+dart
 final client = Supabase.instance.client;
-```
+
 
 ### 3.1. Fetching Data (`select`)
 
 *   **Select all columns from a table:**
-    ```dart
+    dart
     final response = await client.from('your_table').select();
     if (response.isEmpty) {
       print('No data found');
     } else {
       print('Data: $response'); // List of maps
     }
-    ```
+    
 
 *   **Select specific columns:**
-    ```dart
+    dart
     final data = await client.from('your_table').select('column1, column2');
-    ```
+    
 
 *   **Fetch related data (foreign tables using `!inner` for non-nullable or default for nullable):**
     Assuming `profiles` table has a foreign key to `your_table`'s `id`.
-    ```dart
+    dart
     // Fetch 'your_table' data and related 'profiles' data
     final data = await client.from('your_table').select('*, profiles(*)');
     // To specify columns from related table:
     // final data = await client.from('your_table').select('id, name, profiles(username, avatar_url)');
-    ```
+    
 
 *   **Filtering Data:**
     *   `.eq('column_name', value)`: Equal to
@@ -132,37 +132,37 @@ final client = Supabase.instance.client;
     *   `.or('filter1,filter2')`: OR condition, e.g., `.or('id.eq.1,name.eq.John')`
     *   `.filter('column_name', 'operator', 'value')`: Generic filter
 
-    ```dart
+    dart
     final data = await client
         .from('products')
         .select()
         .eq('category', 'Electronics')
         .gt('price', 100)
         .limit(10);
-    ```
+    
 
 *   **Ordering Results:**
-    ```dart
+    dart
     final data = await client
         .from('your_table')
         .select()
         .order('created_at', ascending: false); // Default is false (descending)
     // Order by multiple columns:
     // .order('category', ascending: true).order('name', ascending: true)
-    ```
+    
 
 *   **Limiting and Pagination:**
     *   `.limit(count)`: Limit the number of rows returned.
     *   `.range(from, to)`: Fetch rows within a specific range (inclusive, 0-indexed).
-    ```dart
+    dart
     final dataPage1 = await client.from('your_table').select().range(0, 9); // First 10 rows
     final dataPage2 = await client.from('your_table').select().range(10, 19); // Next 10 rows
-    ```
+    
 
 *   **Single Row Fetch:**
     *   `.single()`: Fetches a single row. Throws an error if not exactly one row is found.
     *   `.maybeSingle()`: Fetches a single row. Returns `null` if no row is found. Throws an error if multiple rows are found.
-    ```dart
+    dart
     try {
       final data = await client.from('your_table').select().eq('id', someId).single();
       // Use data
@@ -174,11 +174,11 @@ final client = Supabase.instance.client;
     if (dataOrNull != null) {
       // Use dataOrNull
     }
-    ```
+    
 
 ### 3.2. Inserting Data (`insert`)
 
-```dart
+dart
 try {
   final List<Map<String, dynamic>> response = await client
       .from('your_table')
@@ -188,18 +188,18 @@ try {
 } on PostgrestException catch (error) {
   print('Database error: ${error.message}');
 }
-```
+
 *   **Bulk Inserts:**
-    ```dart
+    dart
     await client.from('your_table').insert([
       {'column1': 'valueA', 'column2': 1},
       {'column1': 'valueB', 'column2': 2},
     ]);
-    ```
+    
 
 ### 3.3. Updating Data (`update`)
 
-```dart
+dart
 try {
   final List<Map<String, dynamic>> response = await client
       .from('your_table')
@@ -210,11 +210,11 @@ try {
 } on PostgrestException catch (error) {
   print('Database error: ${error.message}');
 }
-```
+
 
 ### 3.4. Deleting Data (`delete`)
 
-```dart
+dart
 try {
   // The delete operation by default does not return the deleted rows.
   // If you need the deleted data, select it first or use a function.
@@ -226,12 +226,12 @@ try {
 } on PostgrestException catch (error) {
   print('Database error: ${error.message}');
 }
-```
+
 
 ### 3.5. Upserting Data (`upsert`)
 Inserts rows if they don't exist (based on primary key or conflict target), or updates them if they do.
 
-```dart
+dart
 try {
   final List<Map<String, dynamic>> response = await client
       .from('your_table')
@@ -244,13 +244,13 @@ try {
 } on PostgrestException catch (error) {
   print('Database error: ${error.message}');
 }
-```
+
 You can specify `onConflict` for more control if not using the primary key.
 
 ### 3.6. Calling PostgreSQL Functions (RPC)
 Call custom database functions defined in your Supabase SQL editor.
 
-```dart
+dart
 try {
   // Assuming a function `increment_views(meme_id_param UUID)` exists
   final result = await client.rpc(
@@ -261,7 +261,7 @@ try {
 } on PostgrestException catch (error) {
   print('RPC error: ${error.message}');
 }
-```
+
 
 ## 4. Storage Operations
 
@@ -276,7 +276,7 @@ Supabase Storage allows you to manage files like images and videos.
 
 Execute server-side TypeScript (Deno) functions for custom logic.
 
-```dart
+dart
 final functions = Supabase.instance.client.functions;
 
 try {
@@ -299,7 +299,7 @@ try {
 } catch (e) {
   print('Generic error invoking Edge Function: $e');
 }
-```
+
 *   The `body` can be any serializable JSON object.
 *   `response.data` contains the data returned by the Edge Function.
 *   `response.status` gives the HTTP status code from the function's response.
@@ -308,7 +308,7 @@ try {
 
 Supabase Realtime allows you to listen to database changes (inserts, updates, deletes), presence events, and broadcast messages.
 
-```dart
+dart
 final client = Supabase.instance.client;
 final myChannel = client.channel('my_table_updates'); // Unique channel name
 
@@ -342,7 +342,7 @@ myChannel.on(
 // client.removeChannel(myChannel);
 // or
 // myChannel.unsubscribe();
-```
+
 
 **Use Cases:**
 *   Live updates in UI when database data changes.
@@ -358,7 +358,7 @@ Integrating Supabase operations with a state management solution (like Provider,
 **General Advice:**
 
 1.  **Service/Repository Layer:** Create service classes or repositories that encapsulate your Supabase API calls. These classes will interact directly with `Supabase.instance.client`.
-    ```dart
+    dart
     // Example: profile_service.dart
     class ProfileService {
       final SupabaseClient _client = Supabase.instance.client;
@@ -373,7 +373,7 @@ Integrating Supabase operations with a state management solution (like Provider,
       }
       // Add other profile related methods...
     }
-    ```
+    
 
 2.  **State Notifiers/Controllers:** Use your chosen state management tool's controllers (e.g., `ChangeNotifier`, `StateNotifier`, `Bloc`) to:
     *   Call methods from your service/repository classes.
@@ -383,7 +383,7 @@ Integrating Supabase operations with a state management solution (like Provider,
 
 **Conceptual Example (using Riverpod):**
 
-```dart
+dart
 // 1. Define a provider for your service
 final profileServiceProvider = Provider((ref) => ProfileService());
 
@@ -404,7 +404,7 @@ final userProfileProvider = FutureProvider.autoDispose.family<Map<String, dynami
 //     );
 //   },
 // )
-```
+
 Refer to the documentation of your chosen state management package for specific integration patterns with asynchronous operations.
 
 ## 8. Error Handling in Flutter
@@ -417,7 +417,7 @@ Robust error handling is crucial for a good user experience.
     *   `StorageException`: For file storage errors (e.g., file not found, access denied).
     *   `FunctionException`: For errors when invoking Edge Functions. Contains `message`, `details` (which might include `status` code from the function).
 *   **Try-Catch Blocks:** Always wrap Supabase calls in `try-catch` blocks.
-    ```dart
+    dart
     try {
       // Supabase operation
     } on AuthException catch (e) {
@@ -436,9 +436,9 @@ Robust error handling is crucial for a good user experience.
       // Handle any other generic errors
       print('Generic Error: $e');
     }
-    ```
+    
 *   **User-Friendly Messages:** Convert caught exceptions into user-friendly messages to display in the UI (e.g., via SnackBars, Dialogs, or inline error texts). Avoid showing raw error messages directly to users unless it's for debugging.
 *   **Logging:** Log detailed errors to your preferred logging service for debugging and monitoring.
 
 This guide provides a starting point for integrating Supabase into your Flutter application. Always refer to the official [Supabase Flutter documentation](https://supabase.io/docs/guides/getting-started/tutorials/with-flutter) for the most current and detailed information.
-```
+

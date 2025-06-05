@@ -7,7 +7,7 @@ This guide explains how to add the `image_picker` package to your Flutter projec
 1.  Open your project's `pubspec.yaml` file.
 2.  Add `image_picker` under the `dependencies` section. It's always best to check for the latest version on [pub.dev](https://pub.dev/packages/image_picker).
 
-    ```yaml
+    yaml
     dependencies:
       flutter:
         sdk: flutter
@@ -15,14 +15,14 @@ This guide explains how to add the `image_picker` package to your Flutter projec
       supabase_flutter: ^2.0.0 # Example: if you have this already
       image_picker: ^1.0.7    # Example: Replace with the actual latest version from pub.dev
       # ...
-    ```
+    
 
 3.  Save the `pubspec.yaml` file.
 4.  Run the following command in your terminal, in the root directory of your Flutter project:
 
-    ```bash
+    bash
     flutter pub get
-    ```
+    
     This will fetch and add the package to your project.
 
 ## 2. iOS Configuration (Crucial)
@@ -33,12 +33,12 @@ For iOS, you **must** provide descriptions for why your app needs access to the 
 2.  Open the `Info.plist` file.
 3.  Inside the main `<dict>` tag, add the following keys and strings:
 
-    ```xml
+    xml
     <key>NSPhotoLibraryUsageDescription</key>
     <string>This app requires access to your photo library so you can select images to create memes or use as custom templates.</string>
     <key>NSCameraUsageDescription</key>
     <string>This app requires access to your camera so you can take new photos to create memes or use as custom templates.</string>
-    ```
+    
 
     *   **`NSPhotoLibraryUsageDescription`**: This string will be shown to the user when the app first requests permission to access their photo library. Customize the message to be specific to your app's functionality.
     *   **`NSCameraUsageDescription`**: This string will be shown to the user when the app first requests permission to access the camera. Customize this message as well.
@@ -53,7 +53,7 @@ For basic image picking from the gallery or camera, `image_picker` generally wor
 *   **Android 10 (API level 29) and higher:** Scoped storage is used by default. The `image_picker` plugin is generally compatible with these changes. You typically **do not** need to add `android:requestLegacyExternalStorage="true"` to your `AndroidManifest.xml`.
 *   **Targeting Android 13 (API level 33) and higher:** If your app targets Android 13+, granular media permissions (`READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`) are used instead of `READ_EXTERNAL_STORAGE`. The `image_picker` plugin should handle these. Ensure your `compileSdkVersion` and `targetSdkVersion` in `android/app/build.gradle` are up-to-date (e.g., 33 or higher).
 
-    ```gradle
+    gradle
     // android/app/build.gradle
     android {
         // ...
@@ -66,7 +66,7 @@ For basic image picking from the gallery or camera, `image_picker` generally wor
         }
         // ...
     }
-    ```
+    
 
 Always refer to the latest documentation on [pub.dev for `image_picker`](https://pub.dev/packages/image_picker) for any recent changes or specific configuration needs, especially regarding Android versions and permissions.
 
@@ -81,7 +81,7 @@ If you intend to use `image_picker` on Flutter Web:
 With these steps completed, you can now import `package:image_picker/image_picker.dart` into your Dart files and use the `ImagePicker` class to pick images.
 
 Example of picking an image from the gallery:
-```dart
+dart
 // In your Dart code:
 // import 'package:image_picker/image_picker.dart';
 //
@@ -91,7 +91,7 @@ Example of picking an image from the gallery:
 // if (image != null) {
 //   // Use image.path or image.readAsBytes()
 // }
-```
+
 
 Remember to handle potential errors during image picking (e.g., user cancels, permission denied if not handled by plugin) and provide appropriate feedback in your app. For more fine-grained permission control before attempting to pick, consider using a package like `permission_handler`.
-```
+

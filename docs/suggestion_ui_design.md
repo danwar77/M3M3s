@@ -18,7 +18,7 @@ The suggestions will be displayed within a dedicated `Card` widget below the "Ge
 
 **Structure of the Suggestions `Card`:**
 
-```
+
 Card
   elevation: 2.0
   margin: EdgeInsets.symmetric(vertical: 16.0)
@@ -29,7 +29,7 @@ Card
       - Analyzed Text Details Section
       - (Optional Divider)
       - Suggested Templates Section (if any)
-```
+
 
 ### 3.1. Header
 
@@ -106,4 +106,4 @@ This section is displayed only if `_suggestionResults['suggestedTemplates']` exi
 7.  User can ignore suggestions and still use the main "Choose Template" or "Upload Custom" buttons. Selecting a template/image through these main buttons should clear `_suggestionResults`.
 
 This enhanced UI design aims to make the AI-powered suggestions more integrated into the user's workflow, providing valuable insights and actionable shortcuts for template selection.
-```
+

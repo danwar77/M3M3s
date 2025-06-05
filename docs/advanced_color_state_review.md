@@ -18,4 +18,4 @@ As per `advanced_color_picker_plan.md`, the advanced color picker (e.g., from th
 The existing state variables `_textColor` and `_textStrokeColor` are **sufficient** for storing the colors selected by the advanced color picker. No new, separate state variables are required for this purpose. The advanced picker will act as an alternative input method to modify these existing state values.
 
 This step confirms the adequacy of the current state management for color properties in relation to the planned advanced color picker feature.
-```
+

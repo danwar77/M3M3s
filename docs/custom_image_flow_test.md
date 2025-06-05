@@ -102,4 +102,4 @@ The conceptual walkthrough of the custom image upload flow, from selection in `T
 *   The saving mechanism in `MemeDisplayScreen` accurately determines the `is_custom_image` flag as `true` when the meme originates from a `localImageFile`.
 
 The flow should function as intended, allowing users to use their own images for meme creation.
-```
+

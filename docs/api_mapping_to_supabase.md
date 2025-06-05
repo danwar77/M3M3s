@@ -179,4 +179,4 @@ The Supabase-centric architecture effectively covers all functionalities outline
 *   Authentication is seamlessly integrated into the Supabase ecosystem.
 
 This mapping provides a clear path for implementing the application's backend logic using Supabase tools.
-```
+

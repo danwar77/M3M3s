@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 class SuggestedTemplateItem extends StatelessWidget {
   /// Data for a suggested template, expected to be a map usually parsed from JSON.
   /// Example structure:
-  /// ```json
+  /// json
   /// {
   ///   "id": "uuid-string-for-template",
   ///   "name": "Template Name",
@@ -15,7 +15,7 @@ class SuggestedTemplateItem extends StatelessWidget {
   ///   "imageUrl": "url_to_full_template_image.png", // Main image, used if thumbnail is missing
   ///   "score": 0.85 // Optional relevance score (0.0 to 1.0)
   /// }
-  /// ```
+  /// 
   final Map<String, dynamic> suggestionData;
   final VoidCallback onTap;
 
@@ -124,4 +124,4 @@ class SuggestedTemplateItem extends StatelessWidget {
     );
   }
 }
-```
+

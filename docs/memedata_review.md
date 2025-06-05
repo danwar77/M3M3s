@@ -6,7 +6,7 @@
 To review the `MemeData` class (currently defined in `meme_display_screen.dart` and also with a similar structure in `text_input_screen.dart`) and confirm its suitability for passing the required data from `TextInputScreen` to `MemeDisplayScreen`. This is in preparation for implementing the navigation between these two screens.
 
 ## Current `MemeData` Structure (as defined in `meme_display_screen.dart`):
-```dart
+dart
 class MemeData {
   final String? topText;
   final String? bottomText;
@@ -23,7 +23,7 @@ class MemeData {
   }) : assert(imageUrl != null || localImageFile != null, 
             'Either imageUrl or localImageFile must be provided for display.');
 }
-```
+
 A similar structure is also present in `text_input_screen.dart`. It's noted that this class should ideally be defined in a single shared location (e.g., a `models` directory) and imported.
 
 ## Assessment of Fields for Current Navigation Plan:
@@ -77,4 +77,4 @@ The `MemeData` class, as currently defined (with fields `topText`, `bottomText`,
 *   Retain the `templateId` for later use (e.g., when saving the meme).
 
 No modifications to the `MemeData` class are required for the planned "Connect Text Input to Display/Edit Screen" step. The existing structure supports the data flow well. The duplication of the `MemeData` class definition itself should be addressed by moving it to a shared location.
-```
+

@@ -6,7 +6,7 @@
 To verify and confirm that `MemeDisplayScreen` (in `meme_display_screen.dart`) accurately initializes its display (text, image) and utilizes necessary data (like `templateId` and the presence of `localImageFile`) from the `initialMemeData` object for its operations, especially for saving. This review follows recent updates to image handling logic.
 
 ## `MemeData` Structure (as passed to `MemeDisplayScreen`):
-```dart
+dart
 class MemeData {
   final String? topText;
   final String? bottomText;
@@ -23,7 +23,7 @@ class MemeData {
   }) : assert(imageUrl != null || localImageFile != null, 
             'Either imageUrl or localImageFile must be provided for display.');
 }
-```
+
 
 ## Review Checklist & Findings:
 
@@ -38,7 +38,7 @@ class MemeData {
 *   **Check:** Does the image display logic correctly prioritize `widget.initialMemeData.localImageFile` (using `Image.file()`) and then fall back to `widget.initialMemeData.imageUrl` (using `Image.network()`)? Are `loadingBuilder` and `errorBuilder` present and appropriate for both?
 *   **Finding:** **PASS.**
     *   The implemented logic is:
-      ```dart
+      dart
       if (widget.initialMemeData.localImageFile != null) { // Prioritizes localImageFile
         imageWidget = Image.file(widget.initialMemeData.localImageFile!, 
           fit: BoxFit.contain,
@@ -51,7 +51,7 @@ class MemeData {
           errorBuilder: (context, error, stackTrace) { /* ... */ }
         );
       } else { /* Fallback for error: no image source */ }
-      ```
+      
     *   This correctly prioritizes `localImageFile`.
     *   `Image.file()` now includes an `errorBuilder` (displaying "Error loading local image.").
     *   `Image.network()` includes its `loadingBuilder` and a distinct `errorBuilder` (displaying "Error loading template image.").
@@ -81,4 +81,4 @@ The `MemeDisplayScreen` widget correctly consumes and utilizes all relevant fiel
 *   The save functionality accurately uses the `templateId` and determines the `is_custom_image` flag based on the nature of the `initialMemeData` (custom local file, template image, or external image URL that is not a formal template).
 
 The current implementation is sound and ensures data integrity for display and saving operations based on the data passed from `TextInputScreen`.
-```
+

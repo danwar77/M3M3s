@@ -10,7 +10,7 @@ This document reviews the implementation of the paginated template browser withi
 *   **Status:** Reviewed and Refined.
 *   **Details:**
     *   **Initial Load Trigger:** The logic at the beginning of `_selectTemplate()` was refined to:
-        ```dart
+        dart
         if ((_allFetchedTemplates.isEmpty && !_isLoadingInitialTemplates) || _fetchTemplatesError != null) {
             if (mounted) {
                 setState(() {
@@ -20,7 +20,7 @@ This document reviews the implementation of the paginated template browser withi
             }
             _fetchTemplates(isInitialFetch: true); 
         }
-        ```
+        
         This correctly triggers an initial fetch if the list is empty and not already loading, OR if a previous error occurred. It resets `_fetchTemplatesError` and `_hasMoreTemplates` before the fetch.
     *   **"Retry" Button (Error State):** The `onPressed` handler for the "Retry" button (when `_fetchTemplatesError != null` and `_allFetchedTemplates.isEmpty`) correctly calls `_fetchTemplates(isInitialFetch: true)`. The state reset of `_fetchTemplatesError = null` and `_hasMoreTemplates = true` is handled by the initial load trigger logic when `_selectTemplate` is re-invoked by the button or the UI rebuilds leading to the call of `_fetchTemplates(isInitialFetch: true)`. The current implementation within the button's `onPressed` directly calls `_fetchTemplates(isInitialFetch: true)` which internally resets the necessary states.
     *   **"Refresh" Button (Empty State):** The `onPressed` handler for the "Refresh" button (when `_allFetchedTemplates.isEmpty && !_hasMoreTemplates && _fetchTemplatesError == null`) also correctly calls `_fetchTemplates(isInitialFetch: true)`. `_hasMoreTemplates` is reset to `true` by `_fetchTemplates(isInitialFetch: true)`.
@@ -67,4 +67,4 @@ The paginated template browser in `TextInputScreen` demonstrates robust logic fo
 *   Gracefully handling the end of the template list.
 
 The UI feedback is consistent and user-friendly, contributing to a good overall user experience for template browsing. The identified improvement area for "load more" errors (showing a SnackBar if the list is already populated) has also been implemented in the `_fetchTemplates` method itself.
-```
+
