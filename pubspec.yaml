@@ -1,0 +1,55 @@
+name: memes
+description: Una app de memes en Flutter
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^1.10.7
+  image_picker: ^1.0.7
+  flutter_colorpicker: ^1.0.3
+  share_plus: ^7.2.1
+  path_provider: ^2.1.2
+  flutter_localizations:
+    sdk: flutter
+  flutter_gen: ^5.3.2
+  intl: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/stickers/
+  fonts:
+    - family: FontAwesome
+      fonts:
+        - asset: fonts/fontawesome-webfont.ttf
+        - asset: fonts/fontawesome-webfont.woff
+        - asset: fonts/fontawesome-webfont.woff2
+        - asset: fonts/fontawesome-webfont.eot
+        - asset: fonts/fontawesome-webfont.svg
+        - asset: fonts/FontAwesome.otf
+    - family: Roboto
+      fonts:
+        - asset: font/roboto/Roboto-Regular.ttf
+        - asset: font/roboto/Roboto-Bold.ttf
+        - asset: font/roboto/Roboto-Light.ttf
+        - asset: font/roboto/Roboto-Medium.ttf
+        - asset: font/roboto/Roboto-Thin.ttf
+    - family: MaterialDesignIcons
+      fonts:
+        - asset: font/material-design-icons/Material-Design-Icons.ttf
+        - asset: font/material-design-icons/Material-Design-Icons.woff
+        - asset: font/material-design-icons/Material-Design-Icons.woff2
+        - asset: font/material-design-icons/Material-Design-Icons.eot
+        - asset: font/material-design-icons/Material-Design-Icons.svg
